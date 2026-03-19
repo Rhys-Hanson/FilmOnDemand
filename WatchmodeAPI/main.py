@@ -46,7 +46,7 @@ class WatchmodeAPI:
         ids = [] # List of ids for the api call
         temp_dict = {}
         for item in data:
-            temp_dict[item["name"].lower()] = item["id"]
+            temp_dict[str(item["name"]).lower()] = item["id"]
 
         while True:
             user_input = input(f'Enter {label} (or type "esc" to finish): ').lower().strip()
