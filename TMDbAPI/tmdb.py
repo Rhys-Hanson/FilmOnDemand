@@ -1,0 +1,18 @@
+from tmdb3 import searchMovie, set_key #import the python wrapper for the TMDb API
+
+set_key('API_KEY_HERE') #put API key here
+
+#from TasteDive API, it will gather a list of movies similar to the title the user inputs
+#list will be sent here to be processed and filtered for movies of the rating range and genre
+def quality_check(TDmovies, required_genre, min_rating):
+    filteredMovies = []
+    for TDmovie in TDmovies: ##for each movie from the list of similar movies from TasteDive
+        filmList = searchMovie(TDmovie) #creates another list of similar movies for each movie from original list
+        for film in filmList: #takes each movie from the new list
+            if film.title and film.title.lower() == TDmovie.lower(): #matches the title of the movie from both lists
+                if film.genres != None and required_genre in [g.name for g in film.genres]: #checks if genre inputted matches one of the genres of the movie
+                    if film.userrating != None and min_rating <= film.userrating: #checks if the user rating is in the range inputted
+                        filteredMovies.append(TDmovie) #passed all filters so it is added to a new filtered list of movies
+                        break
+    
+    return filteredMovies
