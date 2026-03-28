@@ -16,3 +16,22 @@ def quality_check(TDmovies, required_genre, min_rating):
                         break
     
     return filteredMovies
+
+def movie_info(title):
+    possibleMovies = searchMovie (title) #searches for the movie title and returns a list of movies with similar titles
+
+    if len(possibleMovies) == 0:
+        print("No description found")
+
+    title = possibleMovies[0] #takes the first movie from the list of possible ones, which is the most likely match
+    print("Title: " + title.title)
+    print("Release Date: " + str(title.releasedate))
+    print("Overview: " + title.overview)
+    print("Genres: " + ", ".join(g.name for g in title.genres))
+    print("Cast: " + ", ".join(c.name for c in title.cast[:3]) + "...") #prints the top 3 main cast members
+    
+    directors = [person.name for person in title.crew if person.job == 'Director']
+    director_name = ", ".join(directors) if directors else "Unknown"
+    print("Director: " + director_name)
+
+    print("Studio: " + title.studios[0].name)
