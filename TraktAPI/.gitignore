@@ -1,2 +1,3 @@
 .env
 venv/
+Trakt_Movies_List/*.txt
