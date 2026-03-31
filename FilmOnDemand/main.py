@@ -8,11 +8,31 @@ class FilmOnDemand:
     def settings(self):
         return None
 
-    def get_watchmode_movies(self, sort_setting):
-        source_ids = self.watchmode.get_source_ids(["netflix", "amazon"])
+    def get_watchmode_movies(self, sort_setting):        
+        if sort_setting not in ["genre", "genres", "actor", "actress"]:
+            print("Invalid option.")
+            return []
+        
+        sources = []
+        user_input = input("Enter Streaming Service(s): >>Press \"Enter\" to Leave<<\n>>> ").lower().strip()
+        while True:
+            if user_input == "": 
+                break
+            else: 
+                sources.append(user_input)
+            user_input = input(">>> ").lower().strip()
+        source_ids = self.watchmode.get_source_ids(sources)
 
         if sort_setting == "genre" or sort_setting == "genres":
-            genre_ids = self.watchmode.get_genre_ids(["romance", "comedy"])
+            genres = []
+            user_input = input("Enter Genre(s): >>Press \"Enter\" to Leave<<\n>>> ").lower().strip()
+            while True:
+                if user_input == "": 
+                    break
+                else: 
+                    genres.append(user_input)
+                user_input = input(">>> ").lower().strip()
+            genre_ids = self.watchmode.get_genre_ids(genres)
             data = self.watchmode.fetch_movies_by_genre(genre_ids, source_ids)
 
         elif sort_setting == "actor" or sort_setting == "actress":
@@ -24,10 +44,6 @@ class FilmOnDemand:
                 return []
 
             data = self.watchmode.fetch_movies_by_actor(actor_id, source_ids)
-
-        else:
-            print("Invalid option.")
-            return []
 
         movies = self.watchmode.parse_results(data)
         return movies
