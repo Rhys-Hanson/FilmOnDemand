@@ -2,16 +2,19 @@
 
 from dotenv import load_dotenv
 import os
-from api_data import genre_data
-from api_data import source_data
+from .api_data import genre_data, source_data
 import urllib.request
 import urllib.parse
+from pathlib import Path 
 import json
 
 class WatchmodeAPI:
 
 # creates an object of the class
     def __init__(self):
+        self.genre_data = genre_data
+        self.source_data = source_data
+        
         load_dotenv()
 
         self.API_KEY = os.getenv("WATCHMODE_API_KEY")
@@ -20,25 +23,41 @@ class WatchmodeAPI:
 
         self.base_url = "https://api.watchmode.com/v1/list-titles/?"
 
-# takes a list of strings, genre_data or source_data, and returns its corresponding ID
-    def get_genre_or_source_ids(self, data, genre_or_source):
+# takes a list of strings through the genres param and returns a corresponding list of IDs
+    def get_genre_ids(self, genres):
         ids = [] # List of ids for the api call
         temp_dict = {}
-        for item in data:
+        for item in self.genre_data:
             temp_dict[str(item["name"]).lower()] = item["id"]
         
-        for name in genre_or_source:
+        for name in genres:
             name = name.lower().strip()
         if name in temp_dict:
             ids.append(temp_dict[name])
         
         return ids
 
-# takes an actor name as parameter and returns corresponding Watchmode ID
-    def get_actor_id(self,actor_name):
-        with open("WatchmodeAPI/person_id_map.json", "r", encoding="utf-8") as f:
+# takes a list of strings through the sources param and returns a corresponding list of IDs
+    def get_source_ids(self, sources):
+        ids = [] # List of ids for the api call
+        temp_dict = {}
+        for item in self.source_data:
+            temp_dict[str(item["name"]).lower()] = item["id"]
+        
+        for name in sources:
+            name = name.lower().strip()
+        if name in temp_dict:
+            ids.append(temp_dict[name])
+        
+        return ids
+
+# takes an actor name as parameter and returns corresponding Watchmode ID from the .json file data provided by Watchmode.com
+    def get_actor_id(self, actor_name):
+        file_path = Path(__file__).resolve().parent / "person_id_map.json"
+        with open(file_path, "r", encoding="utf-8") as f:
             person_map = json.load(f)
-        return(person_map.get(actor_name))
+        return person_map.get(actor_name)
+
 
 # takes a list of genres ids and source ids and outputs the json script of the top 10 movies
     def fetch_movies_by_genre(self, genre_ids, source_ids):
