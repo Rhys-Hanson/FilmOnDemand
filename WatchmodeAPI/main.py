@@ -40,6 +40,7 @@ class WatchmodeAPI:
             person_map = json.load(f)
         return(person_map.get(actor_name))
 
+# takes a list of genres ids and source ids and outputs the json script of the top 10 movies
     def fetch_movies_by_genre(self, genre_ids, source_ids):
         params = {
             "apiKey": self.API_KEY,
