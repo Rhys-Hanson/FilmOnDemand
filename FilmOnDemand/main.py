@@ -8,9 +8,8 @@ class FilmOnDemand:
     def settings(self):
         return None
 
-    def get_watchmode_movies(self):
+    def get_watchmode_movies(self, sort_setting):
         source_ids = self.watchmode.get_source_ids(["netflix", "amazon"])
-        sort_setting = input("Sort by Genres or Actor/Actress?\n").lower().strip()
 
         if sort_setting == "genre" or sort_setting == "genres":
             genre_ids = self.watchmode.get_genre_ids(["romance", "comedy"])
@@ -19,8 +18,6 @@ class FilmOnDemand:
         elif sort_setting == "actor" or sort_setting == "actress":
             actor_name = input("Enter Actor Name: ").lower().strip()
             actor_id = self.watchmode.get_actor_id(actor_name)
-            print("actor_id: ")
-            print(actor_id)
             
             if actor_id is None:
                 print("Actor not found.")
@@ -33,7 +30,6 @@ class FilmOnDemand:
             return []
 
         movies = self.watchmode.parse_results(data)
-        print(movies)
         return movies
 
     def get_tastedive_movies(self):
@@ -48,7 +44,15 @@ class FilmOnDemand:
 
 if __name__ == "__main__":
     var = FilmOnDemand()
-    var.get_watchmode_movies()
+    sort_setting = input("Sort by Genres or Actor/Actress?\n>>>").lower().strip()
+    movies = var.get_watchmode_movies(sort_setting)
+    print("\n----------------------------------------------\n")
+    for movie in movies:
+        print(movie)
+    
+    print("\n----------------------------------------------")
+
+
     # Take user input, decide on what settings they would like to set up:
     # --> if the user wants top 10 movies by genre, actor or movies similar to a movie provided
     # --> input what streaming services the user has access to
