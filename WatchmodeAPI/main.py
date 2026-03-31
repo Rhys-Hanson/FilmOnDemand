@@ -7,10 +7,6 @@ from api_data import source_data
 import urllib.request
 import urllib.parse
 import json
-import keyboard
-
-
-"Data pulled from api call on Watchmode.com"
 
 class WatchmodeAPI:
     def __init__(self):
