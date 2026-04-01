@@ -19,7 +19,7 @@ class WatchmodeAPI:
 
         self.API_KEY = os.getenv("WATCHMODE_API_KEY")
         if not self.API_KEY:
-            raise ValueError("WATCHMODE_API_KEY not found in .env file")
+            raise ValueError("WATCHMODE_API_KEY not found in .env file\n Get your free api key: https://api.watchmode.com/requestApiKey/")
 
         self.base_url = "https://api.watchmode.com/v1/list-titles/?"
 
