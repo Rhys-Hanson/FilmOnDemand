@@ -1,4 +1,4 @@
-from tmdb3 import searchMovie, set_key #import the python wrapper for the TMDb API
+from tmdb3 import searchMovie, set_key, set_cache #import the python wrapper for the TMDb API
 import os
 from dotenv import load_dotenv
 
@@ -8,6 +8,7 @@ class TMDbAPI:
         
         self.API_KEY = os.getenv("TMDb_API_KEY")
         set_key(self.API_KEY) #put API key here
+        set_cache('null')
         
 #from TasteDive API, it will gather a list of movies similar to the title the user inputs
 #list will be sent here to be processed and filtered for movies of the rating range and genre

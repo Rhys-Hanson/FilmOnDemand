@@ -59,6 +59,11 @@ class FilmOnDemand:
     def get_movie_info(self, movies):
         print("\n--- Fetching TMDb Details ---")
         movie_info = {movie : self.tmdb.movie_info(movie) for movie in movies}
+        #
+        #
+        #Append trakt movie info tho this dictionary SAMUEL
+        #
+        #
         return movie_info
 
 
@@ -67,11 +72,6 @@ if __name__ == "__main__":
     sort_setting = input("Sort by Genres or Actor/Actress?\n>>>").lower().strip()
     movies = var.get_watchmode_movies(sort_setting)
     movies_with_desc = var.get_movie_info(movies)
-    print("\n----------------------------------------------\n")
-    print(movies_with_desc)
-    
-    print("\n----------------------------------------------")
-
 
     # Take user input, decide on what settings they would like to set up:
     # --> if the user wants top 10 movies by genre, actor or movies similar to a movie provided
