@@ -65,6 +65,154 @@ class TraktAPI:
             "source": f"Trakt ({source})"
         }
 
+    def rank_movies(self, movie_titles):
+        """
+        Takes a list of movie title strings, fetches stats for each from Trakt,
+        ranks them by trending position (movies not trending are ranked last by popularity),
+        and returns an ordered list of dictionaries with relevant data.
+
+        Each dictionary contains:
+            - title                  : Movie title
+            - year                   : Release year
+            - trending_rank          : Rank in Trakt trending (None if not trending)
+            - watchers               : Number of people watching right now (from trending)
+            - popularity_rank        : Rank in Trakt all-time popular (None if not in top 100)
+            - plays_weekly           : Total plays this week (from played/weekly)
+            - unique_watchers_weekly : Unique watchers this week (from watched/weekly)
+            - collectors             : Number of users who collected the movie
+            - collect_count          : Total number of times collected
+            - trakt_rating           : Trakt community rating out of 10
+            - rating_votes           : Number of votes for the rating
+            - trakt_id               : Trakt internal ID (useful for other API calls)
+            - imdb_id                : IMDb ID
+            - tmdb_id                : TMDb ID
+
+        Movies are sorted by trending_rank first (lower = better),
+        then by popularity_rank for non-trending movies.
+        Movies not found in either list are appended at the end.
+
+        Usage example:
+            api = TraktAPI()
+            results = api.rank_movies(["Inception", "The Dark Knight", "Interstellar"])
+            for movie in results:
+                print(movie)
+        """
+        headers = self.get_headers()
+        limit = 100
+
+        # ── Step 1: Fetch all category lists once (avoid repeated API calls) ──
+
+        # Trending: currently being watched right now
+        trending_map = {}  # title.lower() -> {rank, watchers}
+        r = requests.get(f"{self.base_url}/movies/trending", headers=headers, params={"limit": limit})
+        if r.status_code == 200:
+            for rank, entry in enumerate(r.json(), start=1):
+                t = entry.get("movie", {}).get("title", "")
+                trending_map[t.lower()] = {
+                    "trending_rank": rank,
+                    "watchers": entry.get("watchers", 0)
+                }
+
+        # Popular: all-time popularity ranking
+        popular_map = {}  # title.lower() -> rank
+        r = requests.get(f"{self.base_url}/movies/popular", headers=headers, params={"limit": limit})
+        if r.status_code == 200:
+            for rank, movie in enumerate(r.json(), start=1):
+                t = movie.get("title", "")
+                popular_map[t.lower()] = rank
+
+        # Played (weekly): total plays and unique watchers this week
+        played_map = {}  # title.lower() -> {plays, watchers}
+        r = requests.get(f"{self.base_url}/movies/played/weekly", headers=headers, params={"limit": limit})
+        if r.status_code == 200:
+            for entry in r.json():
+                t = entry.get("movie", {}).get("title", "")
+                played_map[t.lower()] = {
+                    "plays_weekly": entry.get("plays", 0),
+                    "unique_watchers_weekly": entry.get("watchers", 0)
+                }
+
+        # Collected (weekly): collectors and collect count
+        collected_map = {}  # title.lower() -> {collectors, collects}
+        r = requests.get(f"{self.base_url}/movies/collected/weekly", headers=headers, params={"limit": limit})
+        if r.status_code == 200:
+            for entry in r.json():
+                t = entry.get("movie", {}).get("title", "")
+                collected_map[t.lower()] = {
+                    "collectors": entry.get("collectors", 0),
+                    "collect_count": entry.get("collects", 0)
+                }
+
+        # ── Step 2: For each movie, look up its slug and ratings ──
+        ranked = []
+        not_found = []
+
+        for title in movie_titles:
+            title_lower = title.lower()
+            entry = {"title": title}
+
+            # Search for the movie to get its slug and IDs
+            r = requests.get(
+                f"{self.base_url}/search/movie",
+                headers=headers,
+                params={"query": title, "limit": 1}
+            )
+            if r.status_code == 200 and r.json():
+                movie_data = r.json()[0].get("movie", {})
+                ids = movie_data.get("ids", {})
+                slug = ids.get("slug")
+                entry["year"]     = movie_data.get("year", "N/A")
+                entry["trakt_id"] = ids.get("trakt", "N/A")
+                entry["imdb_id"]  = ids.get("imdb", "N/A")
+                entry["tmdb_id"]  = ids.get("tmdb", "N/A")
+
+                # Fetch Trakt rating for this movie
+                if slug:
+                    r2 = requests.get(f"{self.base_url}/movies/{slug}/ratings", headers=headers)
+                    if r2.status_code == 200:
+                        rd = r2.json()
+                        entry["trakt_rating"] = round(rd.get("rating", 0), 2)
+                        entry["rating_votes"] = rd.get("votes", 0)
+                    else:
+                        entry["trakt_rating"] = "N/A"
+                        entry["rating_votes"] = "N/A"
+            else:
+                entry["year"]         = "N/A"
+                entry["trakt_id"]     = "N/A"
+                entry["imdb_id"]      = "N/A"
+                entry["tmdb_id"]      = "N/A"
+                entry["trakt_rating"] = "N/A"
+                entry["rating_votes"] = "N/A"
+
+            # ── Step 3: Pull data from the pre-fetched category maps ──
+            trending_data  = trending_map.get(title_lower, {})
+            played_data    = played_map.get(title_lower, {})
+            collected_data = collected_map.get(title_lower, {})
+
+            entry["trending_rank"]          = trending_data.get("trending_rank", None)
+            entry["watchers"]               = trending_data.get("watchers", 0)
+            entry["popularity_rank"]        = popular_map.get(title_lower, None)
+            entry["plays_weekly"]           = played_data.get("plays_weekly", 0)
+            entry["unique_watchers_weekly"] = played_data.get("unique_watchers_weekly", 0)
+            entry["collectors"]             = collected_data.get("collectors", 0)
+            entry["collect_count"]          = collected_data.get("collect_count", 0)
+
+            # Separate found vs not found for sorting
+            if entry["trending_rank"] is not None or entry["popularity_rank"] is not None:
+                ranked.append(entry)
+            else:
+                not_found.append(entry)
+
+        # ── Step 4: Sort by trending rank first, then popularity rank ──
+        # Movies with no trending rank get sorted to the bottom of the trending group
+        ranked.sort(key=lambda x: (
+            x["trending_rank"] if x["trending_rank"] is not None else float("inf"),
+            x["popularity_rank"] if x["popularity_rank"] is not None else float("inf")
+        ))
+
+        # Append movies not found in any list at the end
+        return ranked + not_found
+
     def fetch_category(self, category):
         """
         Fetches top movies for a given category and returns a list of movie entries
@@ -77,7 +225,7 @@ class TraktAPI:
 
         if category in period_categories:
             url = f"{self.base_url}/movies/{category}/weekly"
-            # Period Options: weekly, monthly, yearly, all. Just change the weekly at the end here. 
+            # Period Options: weekly, monthly, yearly, all. Just change the weekly at the end here.
         else:
             url = f"{self.base_url}/movies/{category}"
 
@@ -93,7 +241,7 @@ class TraktAPI:
         data = response.json()
         movies = []
 
-        for rank, entry in enumerate(data, start=1):
+        for rank, entry in enumerate(data, start=0):
             # Each category returns data in a slightly different structure
             if category == "trending":
                 movie = entry.get("movie", {})
@@ -146,12 +294,12 @@ class TraktAPI:
 
         # Friendly stat labels per category
         stat_labels = {
-            "trending":   {"watchers_right_now": "Watchers Right Now"},
-            "popular":    {},
-            "played":     {"play_count": "Total Plays", "unique_watchers": "Unique Watchers"},
-            "watched":    {"unique_watchers": "Unique Watchers", "play_count": "Total Plays"},
-            "collected":  {"collectors": "Collectors", "collect_count": "Total Collects"},
-            "anticipated":{"list_count": "Lists Featuring This Movie"},
+            "trending":    {"watchers_right_now": "Watchers Right Now"},
+            "popular":     {},
+            "played":      {"play_count": "Total Plays", "unique_watchers": "Unique Watchers"},
+            "watched":     {"unique_watchers": "Unique Watchers", "play_count": "Total Plays"},
+            "collected":   {"collectors": "Collectors", "collect_count": "Total Collects"},
+            "anticipated": {"list_count": "Lists Featuring This Movie"},
         }
 
         with open(filename, "w") as f:
@@ -192,9 +340,10 @@ def main():
         print("\nWhat would you like to do?")
         print("  1. Search for a movie")
         print("  2. Browse a category (saves to file)")
-        print("  3. Quit")
+        print("  3. Rank a list of movies by trending")
+        print("  4. Quit")
 
-        choice = input("\nEnter choice (1/2/3): ").strip()
+        choice = input("\nEnter choice (1/2/3/4): ").strip()
 
         # --- Option 1: Search for a movie ---
         if choice == "1":
@@ -246,13 +395,48 @@ def main():
                 # Save full list to file
                 api.save_category_to_file(category, movies)
 
-        # --- Option 3: Quit ---
+        # --- Option 3: Rank a list of movies ---
         elif choice == "3":
+            print("\nEnter movie titles one by one.")
+            print("Press Enter with no input when done.\n")
+
+            movie_list = []
+            while True:
+                title = input(f"  Movie {len(movie_list) + 1}: ").strip()
+                if not title:
+                    if len(movie_list) == 0:
+                        print("  Please enter at least one movie.")
+                        continue
+                    break
+                movie_list.append(title)
+
+            print(f"\n   Ranking {len(movie_list)} movies by trending score...")
+            results = api.rank_movies(movie_list)
+
+            print(f"\n{'=' * 55}")
+            print(f"  📊 Ranked Results ({len(results)} movies)")
+            print(f"{'=' * 55}")
+            for i, movie in enumerate(results, start=1):
+                print(f"\n  #{i}. {movie['title']} ({movie.get('year', 'N/A')})")
+                print(f"      Trakt Rating       : {movie.get('trakt_rating', 'N/A')} ({movie.get('rating_votes', 'N/A')} votes)")
+                print(f"      Trending Rank      : {'#' + str(movie['trending_rank']) if movie['trending_rank'] else 'Not trending'}")
+                print(f"      Watchers Right Now : {movie.get('watchers', 0):,}")
+                print(f"      Popularity Rank    : {'#' + str(movie['popularity_rank']) if movie['popularity_rank'] else 'Not in top 100'}")
+                print(f"      Plays This Week    : {movie.get('plays_weekly', 0):,}")
+                print(f"      Unique Watchers/wk : {movie.get('unique_watchers_weekly', 0):,}")
+                print(f"      Collectors         : {movie.get('collectors', 0):,}")
+                print(f"      Times Collected    : {movie.get('collect_count', 0):,}")
+                print(f"      IMDb ID            : {movie.get('imdb_id', 'N/A')}")
+                print(f"      TMDb ID            : {movie.get('tmdb_id', 'N/A')}")
+            print(f"\n{'=' * 55}\n")
+
+        # --- Option 4: Quit ---
+        elif choice == "4":
             print("Exiting. Goodbye!")
             break
 
         else:
-            print("   Invalid choice, please enter 1, 2, or 3.")
+            print("   Invalid choice, please enter 1, 2, 3, or 4.")
 
 
 if __name__ == "__main__":
