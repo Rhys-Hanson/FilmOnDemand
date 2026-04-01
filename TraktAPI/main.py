@@ -241,7 +241,7 @@ class TraktAPI:
         data = response.json()
         movies = []
 
-        for rank, entry in enumerate(data, start=1):
+        for rank, entry in enumerate(data, start=0):
             # Each category returns data in a slightly different structure
             if category == "trending":
                 movie = entry.get("movie", {})
