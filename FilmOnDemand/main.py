@@ -1,9 +1,11 @@
 from WatchmodeAPI import WatchmodeAPI
+from TraktAPI import TraktAPI
 
 
 class FilmOnDemand:
     def __init__(self):
         self.watchmode = WatchmodeAPI()
+        self.trakt = TraktAPI()
 
     def settings(self):
         return None
