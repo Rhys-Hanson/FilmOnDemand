@@ -3,9 +3,10 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 
-load_dotenv()
 
 class TraktAPI:
+    load_dotenv()
+    
     API_KEY = os.getenv("TRAKT_API_KEY")
     base_url = "https://api.trakt.tv"
 

@@ -1,8 +1,11 @@
 from tmdb3 import searchMovie, set_key #import the python wrapper for the TMDb API
 import os
+from dotenv import load_dotenv
 
 class TMDbAPI:
     def __init__(self):
+        load_dotenv()
+        
         self.API_KEY = os.getenv("TMDb_API_KEY")
         set_key(self.API_KEY) #put API key here
         
