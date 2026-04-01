@@ -1,11 +1,13 @@
 from WatchmodeAPI import WatchmodeAPI
 from TraktAPI import TraktAPI
+from TMDbAPI import TMDbAPI
 
 
 class FilmOnDemand:
     def __init__(self):
         self.watchmode = WatchmodeAPI()
         self.trakt = TraktAPI()
+        self.tmdb = TMDbAPI()
 
     def settings(self):
         return None
@@ -54,19 +56,19 @@ class FilmOnDemand:
         # something like return self.tastedive.get_similar_movies()
         return None
 
-    def get_movie_info(self):
-        return None
+    def get_movie_info(self, movies):
+        print("\n--- Fetching TMDb Details ---")
+        movie_info = {movie : self.tmdb.movie_info(movie) for movie in movies}
+        return movie_info
 
-    def get_movie_trailer(self):
-        return None
 
 if __name__ == "__main__":
     var = FilmOnDemand()
     sort_setting = input("Sort by Genres or Actor/Actress?\n>>>").lower().strip()
     movies = var.get_watchmode_movies(sort_setting)
+    movies_with_desc = var.get_movie_info(movies)
     print("\n----------------------------------------------\n")
-    for movie in movies:
-        print(movie)
+    print(movies_with_desc)
     
     print("\n----------------------------------------------")
 

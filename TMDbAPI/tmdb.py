@@ -1,14 +1,13 @@
 from tmdb3 import searchMovie, set_key #import the python wrapper for the TMDb API
 
-set_key('API_KEY_HERE') #put API key here
 
 class TMDbAPI:
-    def __init__(self, api_key):
-        set_key(api_key)
+    def __init__(self):
+        set_key('API_KEY_HERE') #put API key here
         
 #from TasteDive API, it will gather a list of movies similar to the title the user inputs
 #list will be sent here to be processed and filtered for movies of the rating range and genre
-    def quality_check(TDmovies, required_genre, min_rating):
+    def quality_check(self, TDmovies, required_genre, min_rating):
         filteredMovies = []
         for TDmovie in TDmovies: ##for each movie from the list of similar movies from TasteDive
             filmList = searchMovie(TDmovie) #creates another list of similar movies for each movie from original list
@@ -20,7 +19,7 @@ class TMDbAPI:
                             break
         return filteredMovies
 
-    def movie_info(title):
+    def movie_info(self, title):
         possibleMovies = searchMovie (title) #searches for the movie title and returns a list of movies with similar titles
 
         if len(possibleMovies) == 0:
@@ -39,3 +38,4 @@ class TMDbAPI:
 
         print("Studio: " + title.studios[0].name)
         print("Trailer: " + title.youtube_trailers[0].geturl())
+        print("\n---------\n")
