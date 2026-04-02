@@ -12,11 +12,12 @@ class TasteDiveAPI:
         if not self.api_key:
             raise ValueError("TASTEDIVE_API_KEY not found in .env file")
 
-    def get_recommendations(self, query, media_type="movies", limit=10):
+    # Return the api json from query: "List of movies separated by commas"
+    def get_movies(self, query, media_type="movie"):
         params = {
             "q": query,
             "type": media_type,
-            "limit": limit,
+            "limit": 20,
             "k": self.api_key,
             "info": 1
         }
@@ -29,28 +30,24 @@ class TasteDiveAPI:
             print("Error:", e)
             return None
 
-    def display_results(self, data):
+    def parse_results(self, data):
         if not data:
             print("No data returned.")
             return
 
-        similar = data.get("Similar", {})
-        info = similar.get("Info", [])
-        results = similar.get("Results", [])
-
-        print("\nSeed movie(s):")
-        for item in info:
-            print("-", item.get("Name", "Unknown"))
-
-        print("\nRecommendations:")
+        similar = data.get("similar", {})
+        results = similar.get("results", []) #the actual list of data
+        movie_list = []
+        
         if not results:
             print("No recommendations found.")
             return
-
+        
         for item in results:
-            print("-", item.get("Name", "Unknown"))
+            movie_list.append(item.get("name"))
+        return movie_list
 
     def run(self, query):
-        data = self.get_recommendations(query)
-        self.display_results(data)
-        return data
+        data = self.get_movies(query)
+        movies = self.parse_results(data)
+        return movies

@@ -56,7 +56,7 @@ class WatchmodeAPI:
         file_path = Path(__file__).resolve().parent / "person_id_map.json"
         with open(file_path, "r", encoding="utf-8") as f:
             person_map = json.load(f)
-        return person_map.get(actor_name)
+        return person_map.get(actor_name.lower().strip())
 
 
 # takes a list of genres ids and source ids and outputs the json script of the top 10 movies
@@ -97,9 +97,24 @@ class WatchmodeAPI:
         for item in data["titles"]:
             movies.append(item["title"])
         return movies
+    
+    def run_for_actors(self, actor_name, sources):
+        source_ids = self.get_source_ids(sources)
+        actor_id = self.get_actor_id(actor_name.lower().strip())
 
+        if actor_id is None:
+            print("Actor not found.")
+            return []
 
+        data = self.fetch_movies_by_actor(actor_id, source_ids)
+        movie_list = self.parse_results(data)
+        return movie_list
+    
+    def run_for_genres(self, genres, sources):
+        source_ids = self.get_source_ids(sources)
+        genre_ids = self.get_genre_ids(genres)
 
-
-
+        data = self.fetch_movies_by_genre(genre_ids, source_ids)
+        movie_list = self.parse_results(data)
+        return movie_list
 
