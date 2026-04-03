@@ -34,13 +34,23 @@ class TMDbAPI:
         print("Title: " + title.title)
         print("Release Date: " + str(title.releasedate))
         print("Overview: " + title.overview)
-        print("Genres: " + ", ".join(g.name for g in title.genres))
-        print("Cast: " + ", ".join(c.name for c in title.cast[:3]) + "...") #prints the top 3 main cast members
+        genres = ", ".join(g.name for g in title.genres) if title.genres else "Unknown"
+        print("Genres: " + genres)
+        
+        cast = ", ".join(c.name for c in title.cast[:3]) if title.cast else "Unknown"
+        print("Cast: " + cast + "...")
         
         directors = [person.name for person in title.crew if person.job == 'Director']
-        director_name = ", ".join(directors) if directors else "Unknown"
-        print("Director: " + director_name)
+        print("Director: " + (", ".join(directors) if directors else "Unknown"))
 
-        print("Studio: " + title.studios[0].name)
-        print("Trailer: " + title.youtube_trailers[0].geturl())
+        if title.studios:
+            print("Studio: " + title.studios[0].name)
+        else:
+            print("Studio: Unknown")
+
+        if title.youtube_trailers:
+            print("Trailer: " + title.youtube_trailers[0].geturl())
+        else:
+            print("Trailer: Not available")
+        
         print("\n---------\n")
