@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from WatchmodeAPI.main import WatchmodeAPI
 from TraktAPI.main import TraktAPI
-from TMDbAPI.main import TMDbAPI
+from TMDbAPI.tmdb import TMDbAPI
 from TasteDiveAPI.main import TasteDiveAPI
 
 
