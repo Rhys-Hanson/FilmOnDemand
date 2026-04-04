@@ -7,14 +7,15 @@ import { cn } from '../lib/utils';
 
 interface SwipeScreenProps {
   movies: Movie[];
-  onFinish: (scores: Record<string, number>) => void;
+  onPlayerFinished: () => void;
   onSwipeServer: (movieId: string, liked: boolean) => void;
 }
 
-export function SwipeScreen({ movies, onFinish, onSwipeServer }: SwipeScreenProps) {
+export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [superLikesLeft, setSuperLikesLeft] = useState(1);
+  const [isWaiting, setIsWaiting] = useState(false);
 
   const handleSwipe = (direction: 'left' | 'right' | 'up', movie: Movie) => {
     let scoreChange = 0;
@@ -52,12 +53,39 @@ export function SwipeScreen({ movies, onFinish, onSwipeServer }: SwipeScreenProp
     if (currentIndex < movies.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      onFinish(scores);
+      setIsWaiting(true);
+      onPlayerFinished();
     }
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 flex flex-col p-6 overflow-hidden">
+    <div className="min-h-screen bg-neutral-950 flex flex-col p-6 overflow-hidden relative">
+      {/* Waiting Overlay */}
+      <AnimatePresence>
+        {isWaiting && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 z-50 bg-neutral-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="text-center space-y-6 max-w-sm"
+            >
+              <h2 className="text-3xl font-bold tracking-tight text-white">Waiting for others...</h2>
+              <p className="text-neutral-400 font-medium">Hang tight! The results will appear automatically as soon as everyone finishes swiping.</p>
+              
+              <div className="flex items-center justify-center gap-3 mt-8 text-rose-500/80">
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-2.5 h-2.5 rounded-full bg-current" />
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }} className="w-2.5 h-2.5 rounded-full bg-current" />
+                <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.4 }} className="w-2.5 h-2.5 rounded-full bg-current" />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6 z-10">
         <div className="flex items-center gap-2">

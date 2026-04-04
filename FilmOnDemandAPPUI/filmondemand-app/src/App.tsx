@@ -56,9 +56,9 @@ export default function App() {
       } else if (data.type === 'game_started') {
         setDeck(data.deck);
         setAppState('SWIPING');
-      } else if (data.type === 'match_found') {
-        // Here we could handle an instant win transition, but for now
-        // we'll let the user finish swiping their deck naturally.
+      } else if (data.type === 'game_over') {
+        setScores(data.scores || {});
+        setAppState('COUNTDOWN');
       }
     }
   }, [lastJsonMessage]);
@@ -100,9 +100,8 @@ export default function App() {
     // Note: State changes to SWIPING automatically when the server broadcasts 'game_started'
   };
 
-  const handleSwipeFinish = (finalScores: Record<string, number>) => {
-    setScores(finalScores);
-    setAppState('COUNTDOWN');
+  const handlePlayerFinished = () => {
+    sendJsonMessage({ action: 'player_finished' });
   };
 
   const handleCountdownFinish = () => {
@@ -138,7 +137,7 @@ export default function App() {
       {appState === 'SWIPING' && (
         <SwipeScreen 
            movies={deck} 
-           onFinish={handleSwipeFinish} 
+           onPlayerFinished={handlePlayerFinished} 
            onSwipeServer={handleServerSwipe} 
         />
       )}
