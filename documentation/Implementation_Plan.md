@@ -21,6 +21,7 @@ Use this table to keep track of exactly what has been accomplished, and what you
 
 ---
 
+
 ## 1. Executive Summary
 **Objective:** Transform the current API wrapper/UI prototype into a full-scale, deployed web application. 
 **Core Concept:** A party-game style movie recommendation platform. Users join a "room" via a code (like Kahoot), select their filters, and swipe left/right on movies (like Tinder). When everyone matches on a movie, the group has their winner.
