@@ -110,24 +110,22 @@ class WatchmodeAPI:
             if movie.get("name", "").lower() == movie_input
             and movie.get("type") == "movie"
         ]
-
-        print(exact_match)
-
+        if not exact_match:
+            return None
 
         title_id = exact_match[0]["id"] 
+        
         url = f'https://api.watchmode.com/v1/title/{title_id}/details/?apiKey={self.API_KEY}&append_to_response=sources&regions=CA'
 
         with urllib.request.urlopen(url) as response:
             data = json.loads(response.read().decode())
 
-        poster_large = data.get("posterLarge")
-        rating = data.get("us_rating")
         sources = data.get("sources", [])
         sources = [source["source_id"] for source in sources if source["type"] == "sub"]
         
-        return [sources, poster_large, rating]
+        return {"sources": sources}
 
-# take the json file from fetch_movies_by_... and parses the results to put only the movie titles in a list
+# take the json file from fetch_movies_by_? and parses the results to put only the movie titles in a list
     def parse_results(self, data): 
         movies = []
         for item in data["titles"]:
