@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import useWebSocket from 'react-use-websocket';
 import { EntryScreen } from './screens/EntryScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
+import { SettingsScreen, RoomFilters } from './screens/SettingsScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { SwipeScreen } from './screens/SwipeScreen';
 import { CountdownScreen } from './screens/CountdownScreen';
@@ -94,9 +94,9 @@ export default function App() {
     }
   };
 
-  const handleStartSwiping = () => {
-    // Notify the server to start the game
-    sendJsonMessage({ action: 'start_game' });
+  const handleStartSwiping = (filters: RoomFilters) => {
+    // Notify the server to start the game with the selected settings
+    sendJsonMessage({ action: 'start_game', filters });
     // Note: State changes to SWIPING automatically when the server broadcasts 'game_started'
   };
 

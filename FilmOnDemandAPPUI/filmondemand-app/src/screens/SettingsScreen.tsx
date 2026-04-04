@@ -6,10 +6,17 @@ import { cn } from '../lib/utils';
 import { SearchableChipInput } from '../components/SearchableChipInput';
 import { DualRangeSlider } from '../components/DualRangeSlider';
 
+export interface RoomFilters {
+  genres: string[];
+  services: string[];
+  actors: string[];
+  yearRange: [number, number];
+}
+
 interface SettingsScreenProps {
   roomCode: string;
   playerCount: number;
-  onStart: () => void;
+  onStart: (filters: RoomFilters) => void;
 }
 
 const GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Thriller', 'Animation', 'Documentary', 'Fantasy'];
@@ -123,7 +130,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
       <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent z-50 pointer-events-none">
         <div className="max-w-md mx-auto pointer-events-auto">
           <motion.button 
-            onClick={onStart}
+            onClick={() => onStart({ genres: selectedGenres, services: selectedServices, actors: selectedActors, yearRange })}
             whileTap={{ scale: 0.98 }}
             className="relative w-full overflow-hidden bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold text-lg rounded-[20px] py-5 flex items-center justify-center gap-2 shadow-[0_8px_32px_rgba(244,63,94,0.3)] border border-white/10 group"
           >
