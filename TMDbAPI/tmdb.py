@@ -1,4 +1,4 @@
-from tmdb3 import searchMovie, set_key, set_cache #import the python wrapper for the TMDb API
+from tmdb3 import searchMovie, set_key, set_cache, Movie #import the python wrapper for the TMDb API
 import os
 from dotenv import load_dotenv
 
@@ -7,50 +7,101 @@ class TMDbAPI:
         load_dotenv()
         
         self.API_KEY = os.getenv("TMDb_API_KEY")
-        set_key(self.API_KEY) #put API key here
-        set_cache('null')
         
-#from TasteDive API, it will gather a list of movies similar to the title the user inputs
-#list will be sent here to be processed and filtered for movies of the rating range and genre
-    def quality_check(self, TDmovies, required_genre, min_rating):
-        filteredMovies = []
-        for TDmovie in TDmovies: ##for each movie from the list of similar movies from TasteDive
-            filmList = searchMovie(TDmovie) #creates another list of similar movies for each movie from original list
-            for film in filmList: #takes each movie from the new list
-                if film.title and film.title.lower() == TDmovie.lower(): #matches the title of the movie from both lists
-                    if film.genres != None and required_genre in [g.name for g in film.genres]: #checks if genre inputted matches one of the genres of the movie
-                        if film.userrating != None and min_rating <= film.userrating: #checks if the user rating is in the range inputted
-                            filteredMovies.append(TDmovie) #passed all filters so it is added to a new filtered list of movies
-                            break
-        return filteredMovies
-
-    def movie_info(self, title):
-        possibleMovies = searchMovie (title) #searches for the movie title and returns a list of movies with similar titles
-
-        if len(possibleMovies) == 0:
-            print("No description found")
-
-        title = possibleMovies[0] #takes the first movie from the list of possible ones, which is the most likely match
-        print("Title: " + title.title)
-        print("Release Date: " + str(title.releasedate))
-        print("Overview: " + title.overview)
-        genres = ", ".join(g.name for g in title.genres) if title.genres else "Unknown"
-        print("Genres: " + genres)
+        if not self.API_KEY:
+            raise ValueError("TMDb_API_KEY is missing. Check your .env file.")
+            
+        set_key(self.API_KEY) 
         
-        cast = ", ".join(c.name for c in title.cast[:3]) if title.cast else "Unknown"
-        print("Cast: " + cast + "...")
+        set_cache('file')
         
-        directors = [person.name for person in title.crew if person.job == 'Director']
-        print("Director: " + (", ".join(directors) if directors else "Unknown"))
 
-        if title.studios:
-            print("Studio: " + title.studios[0].name)
-        else:
-            print("Studio: Unknown")
+def movie_info(self, title):
+    possibleMovies = searchMovie(title)
 
-        if title.youtube_trailers:
-            print("Trailer: " + title.youtube_trailers[0].geturl())
-        else:
-            print("Trailer: Not available")
-        
-        print("\n---------\n")
+    if len(possibleMovies) == 0: #boundary chcek
+        return {"error": "No movie found"}
+
+    # Take the first movie from the list of possible ones
+    movie = possibleMovies[0] 
+
+    # Poster URL
+    posterUrl = None
+    if movie.poster:
+        try:
+            posterUrl = movie.poster.geturl('w500') #try to get medium sized poster first
+        except:
+            posterUrl = movie.poster.geturl('original')
+
+    # Year
+    year = None
+    if movie.releasedate: #boundary check
+        year = movie.releasedate.year # gets yrea datetime object
+
+    # YouTube ID
+    youtubeId = None
+    if movie.youtube_trailers: #boundary check
+        url = movie.youtube_trailers[0].geturl()
+        if 'v=' in url:
+            youtubeId = url.split('v=')[-1] #to extrcat the video ID
+
+    # Runtime
+    runtime_str = "Unknown"
+    if movie.runtime:#gives runtmie in integer value (so prolly minutes)
+        hours = movie.runtime // 60
+        minutes = movie.runtime % 60
+        runtime_str = f"{hours}h {minutes}m"
+
+    # Maturity Rating
+    maturityRating = "Unrated"
+    if movie.releases and 'US' in movie.releases:
+        maturityRating = movie.releases['US'].certification or "Unrated"
+
+    # Cast List (Top 4)
+    castList = []
+    if movie.cast:
+        for actor in movie.cast[:4]:
+            imageUrl = None
+            if actor.profile:
+                try:
+                    imageUrl = actor.profile.geturl('w185')
+                except:
+                    imageUrl = actor.profile.geturl('original')
+            
+            castList.append({
+                "name": actor.name,
+                "character": actor.character,
+                "imageUrl": imageUrl
+            })
+
+    # Genres
+    genres = []
+    if movie.genres:
+        genres = [g.name for g in movie.genres]
+
+    # Director 
+    director = "Unknown"
+    if movie.crew:
+        directors = [person.name for person in movie.crew if person.job == 'Director']
+        if directors:
+            director = ", ".join(directors)
+
+    # Studio
+    studio = "Unknown"
+    if movie.studios:
+        studio = movie.studios[0].name
+
+    # Return the Dictionary
+    return {
+        "title": movie.title,
+        "description": movie.overview,
+        "posterUrl": posterUrl,
+        "year": year,
+        "youtubeId": youtubeId,
+        "runtime": runtime_str,
+        "maturityRating": maturityRating,
+        "castList": castList,
+        "genres": genres,        
+        "director": director,    
+        "studio": studio
+    }
