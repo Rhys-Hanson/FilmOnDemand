@@ -13,7 +13,7 @@ class TMDbAPI:
             
         set_key(self.API_KEY) 
         
-        set_cache('file')
+        set_cache("null")
         
 
 def movie_info(self, title):
