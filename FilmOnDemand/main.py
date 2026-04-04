@@ -46,16 +46,24 @@ class FilmOnDemand:
             while user_input != "":
                 seed_movies.append(user_input)
                 user_input = input(">>> ").strip()
-
+                
             if not seed_movies:
                 print("No movies entered.")
                 return []
-
+            
             movies = self.tastedive.run(",".join(seed_movies))
+            
+            movie_info = []
+            source_ids = self.watchmode.get_source_ids(self.sources)
+            for movie in movies:
+                info = self.watchmode.get_watchmode_movie_info(movie)
+                if not info:
+                    continue
+                if any(source_id in info["sources"] for source_id in source_ids):
+                    movie_info.append(movie)
+            movies = movie_info[:10]
+            
             return movies
-        
-        # CURRENTLY RETURNS 20 MOVIES IN A LIST
-        # Implement TMDb to ensure it only displays movies 
 
 
     def get_movie_info(self, movies):
