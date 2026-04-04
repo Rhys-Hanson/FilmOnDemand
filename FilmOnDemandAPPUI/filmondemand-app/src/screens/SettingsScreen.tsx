@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Play, Search, Users, Settings2, Tv, Calendar, Film } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { cn } from '../lib/utils';
 import { SearchableChipInput } from '../components/SearchableChipInput';
 import { DualRangeSlider } from '../components/DualRangeSlider';
 
 interface SettingsScreenProps {
+  roomCode: string;
+  playerCount: number;
   onStart: () => void;
 }
 
@@ -17,7 +20,7 @@ const POPULAR_SERVICES = ['Netflix', 'Prime Video', 'Max', 'Hulu'];
 
 const ACTORS = ['Timothée Chalamet', 'Zendaya', 'Leonardo DiCaprio', 'Tom Cruise', 'Michelle Yeoh', 'Robert Pattinson', 'Florence Pugh', 'Cillian Murphy', 'Anya Taylor-Joy', 'Oscar Isaac'];
 
-export function SettingsScreen({ onStart }: SettingsScreenProps) {
+export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScreenProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedActors, setSelectedActors] = useState<string[]>([]);
@@ -36,7 +39,7 @@ export function SettingsScreen({ onStart }: SettingsScreenProps) {
             <h1 className="text-3xl font-bold text-white tracking-tight">Room Settings</h1>
             <p className="text-neutral-400 mt-1 flex items-center gap-2 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-              4 friends joined
+              {playerCount} {playerCount === 1 ? 'player' : 'players'} joined
             </p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-neutral-900 flex items-center justify-center border border-neutral-800 shadow-inner">
@@ -47,9 +50,12 @@ export function SettingsScreen({ onStart }: SettingsScreenProps) {
         {/* Room Code */}
         <div className="glass-dark rounded-[24px] p-6 flex flex-col items-center justify-center border border-white/5 relative overflow-hidden shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-orange-500/5" />
-          <p className="text-neutral-400 text-sm font-semibold uppercase tracking-widest mb-2 relative z-10">Room Code</p>
-          <div className="text-5xl font-mono font-black tracking-[0.2em] text-white relative z-10 drop-shadow-md">
-            X7B9Q2
+          <div className="bg-white p-3 rounded-2xl mb-4 relative z-10 shadow-lg">
+             <QRCode value={`http://localhost:5173/join/${roomCode}`} size={120} />
+          </div>
+          <p className="text-neutral-400 text-sm font-semibold uppercase tracking-widest mb-1 relative z-10">Room Code</p>
+          <div className="text-4xl font-mono font-black tracking-[0.2em] text-white relative z-10 drop-shadow-md">
+            {roomCode}
           </div>
         </div>
 

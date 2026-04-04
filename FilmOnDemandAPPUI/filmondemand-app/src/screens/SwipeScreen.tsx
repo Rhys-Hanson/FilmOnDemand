@@ -8,17 +8,23 @@ import { cn } from '../lib/utils';
 interface SwipeScreenProps {
   movies: Movie[];
   onFinish: (scores: Record<string, number>) => void;
+  onSwipeServer: (movieId: string, liked: boolean) => void;
 }
 
-export function SwipeScreen({ movies, onFinish }: SwipeScreenProps) {
+export function SwipeScreen({ movies, onFinish, onSwipeServer }: SwipeScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [superLikesLeft, setSuperLikesLeft] = useState(1);
 
   const handleSwipe = (direction: 'left' | 'right' | 'up', movie: Movie) => {
     let scoreChange = 0;
-    if (direction === 'left') scoreChange = -1;
-    if (direction === 'right') scoreChange = 1;
+    if (direction === 'left') {
+       scoreChange = -1;
+    }
+    if (direction === 'right') {
+       scoreChange = 1;
+       onSwipeServer(movie.id, true);
+    }
     if (direction === 'up') scoreChange = -2;
 
     setScores(prev => ({
@@ -37,6 +43,7 @@ export function SwipeScreen({ movies, onFinish }: SwipeScreenProps) {
         [movie.id]: (prev[movie.id] || 0) + 2
       }));
       setSuperLikesLeft(prev => prev - 1);
+      onSwipeServer(movie.id, true);
       nextMovie();
     }
   };

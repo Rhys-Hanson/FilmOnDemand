@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import random
 import string
 from .room_manager import RoomManager
+from .mock_data import MOCK_MOVIES
 
 # Initialize your server
 app = FastAPI()
@@ -67,10 +68,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             data = await websocket.receive_json()
             
             if data["action"] == "start_game":
-                # TO-DO: Call your FilmOnDemand wrapper here!
-                # movies = FilmOnDemand.get_watchmode_movies(...)
-                # await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": movies})
-                pass
+                # Sending mock data to the connected players to simulate API response!
+                await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": MOCK_MOVIES})
                 
             elif data["action"] == "swipe_right":
                 movie_id = data["movie_id"]
