@@ -32,8 +32,7 @@ class TasteDiveAPI:
 
     def parse_results(self, data):
         if not data:
-            print("No data returned.")
-            return
+            return []
 
         similar = data.get("similar", {})
         results = similar.get("results", []) #the actual list of data
