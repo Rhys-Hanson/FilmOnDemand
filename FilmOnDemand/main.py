@@ -1,7 +1,13 @@
-from WatchmodeAPI import WatchmodeAPI
-from TraktAPI import TraktAPI
-from TMDbAPI import TMDbAPI
-from TasteDiveAPI import TasteDiveAPI
+import sys
+import os
+
+# Add the parent directory to Python's path so we can import the sibling folders
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from WatchmodeAPI.main import WatchmodeAPI
+from TraktAPI.main import TraktAPI
+from TMDbAPI.tmdb import TMDbAPI
+from TasteDiveAPI.main import TasteDiveAPI
 
 
 class FilmOnDemand:
@@ -40,16 +46,24 @@ class FilmOnDemand:
             while user_input != "":
                 seed_movies.append(user_input)
                 user_input = input(">>> ").strip()
-
+                
             if not seed_movies:
                 print("No movies entered.")
                 return []
-
+            
             movies = self.tastedive.run(",".join(seed_movies))
+            
+            movie_info = []
+            source_ids = self.watchmode.get_source_ids(self.sources)
+            for movie in movies:
+                info = self.watchmode.get_watchmode_movie_info(movie)
+                if not info:
+                    continue
+                if any(source_id in info["sources"] for source_id in source_ids):
+                    movie_info.append(movie)
+            movies = movie_info[:10]
+            
             return movies
-        
-        # CURRENTLY RETURNS 20 MOVIES IN A LIST
-        # Implement TMDb to ensure it only displays movies 
 
 
     def get_movie_info(self, movies):
@@ -68,10 +82,9 @@ class FilmOnDemand:
             movie_info[movie]["trending_rank"] = trakt_data.get("trending_rank", None)
             movie_info[movie]["watchers"] = trakt_data.get("watchers", 0)
             movie_info[movie]["popularity_rank"] = trakt_data.get("popularity_rank", None)
-            movie_info[movie]["plays_weekly"] = trakt_data.get("plays_weekly", 0)
-            movie_info[movie]["unique_watchers_weekly"] = trakt_data.get("unique_watchers_weekly", 0)
+            movie_info[movie]["total_plays"] = trakt_data.get("total_plays", 0)
+            movie_info[movie]["total_watchers"] = trakt_data.get("total_watchers", 0)
             movie_info[movie]["collectors"] = trakt_data.get("collectors", 0)
-            movie_info[movie]["collect_count"] = trakt_data.get("collect_count", 0)
             movie_info[movie]["trakt_rating"] = trakt_data.get("trakt_rating", "N/A")
             movie_info[movie]["rating_votes"] = trakt_data.get("rating_votes", "N/A")
 

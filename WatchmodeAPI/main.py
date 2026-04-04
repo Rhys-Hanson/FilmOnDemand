@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 from .api_data import genre_data, source_data
 import urllib.request
-import urllib.parse
+from urllib.parse import urlencode
 from pathlib import Path 
 import json
 
@@ -70,7 +70,7 @@ class WatchmodeAPI:
             "limit": 10,
             "genres": ",".join(str(x) for x in genre_ids)
         }
-        url = self.base_url + urllib.parse.urlencode(params)
+        url = self.base_url + urlencode(params)
         
         with urllib.request.urlopen(url) as response:
             return json.loads(response.read().decode())
@@ -86,12 +86,46 @@ class WatchmodeAPI:
             "limit": 10,
             "person_id": actor_id
         }
-        url = self.base_url + urllib.parse.urlencode(params)
+        url = self.base_url + urlencode(params)
         
         with urllib.request.urlopen(url) as response:
             return json.loads(response.read().decode())
 
-# take the json file from fetch_movies_by_... and parses the results to put only the movie titles in a list
+    def get_watchmode_movie_info(self, movie_input):
+        search_value = movie_input
+        params = {
+            "apiKey": self.API_KEY,
+            "search_field": "name",
+            "types" : "movie",
+            'search_value': search_value
+        }
+
+        url = f'https://api.watchmode.com/v1/search/?{urlencode(params)}'
+
+        with urllib.request.urlopen(url) as response:
+            data = json.loads(response.read().decode())
+
+        exact_match = [
+            movie for movie in data.get("title_results", [])
+            if movie.get("name", "").lower() == movie_input
+            and movie.get("type") == "movie"
+        ]
+        if not exact_match:
+            return None
+
+        title_id = exact_match[0]["id"] 
+        
+        url = f'https://api.watchmode.com/v1/title/{title_id}/details/?apiKey={self.API_KEY}&append_to_response=sources&regions=CA'
+
+        with urllib.request.urlopen(url) as response:
+            data = json.loads(response.read().decode())
+
+        sources = data.get("sources", [])
+        sources = [source["source_id"] for source in sources if source["type"] == "sub"]
+        
+        return {"sources": sources}
+
+# take the json file from fetch_movies_by_? and parses the results to put only the movie titles in a list
     def parse_results(self, data): 
         movies = []
         for item in data["titles"]:
