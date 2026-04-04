@@ -6,10 +6,8 @@ import string
 from .room_manager import RoomManager
 from .mock_data import MOCK_MOVIES
 
-# Initialize your server
 app = FastAPI()
 
-# Allow the React frontend to talk to this server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # Change to your React app URL in production
@@ -38,7 +36,6 @@ async def create_room():
         "movies": [],
         "scores": {} # Tracks swipes: {"movie_id_1": 4_likes, "movie_id_2": 1_like}
     }
-    # Return the code and the QR Code URL for React to display
     return {
         "room_code": code,
         "qr_url": f"https://yourfrontend.com/join/{code}"
@@ -46,7 +43,7 @@ async def create_room():
 
 @app.get("/api/rooms/{room_code}")
 async def check_room(room_code: str):
-    """React calls this when a player types in a code to ensure the room exists."""
+    """Verify room exists."""
     if room_code not in active_rooms:
         raise HTTPException(status_code=404, detail="Room not found")
     return {"status": "valid"}
@@ -57,25 +54,21 @@ async def check_room(room_code: str):
 async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: str):
     await manager.connect(websocket, room_code)
     try:
-        # Notify the host that someone joined
         await manager.broadcast_to_room(room_code, {
             "type": "player_joined", 
             "count": len(manager.rooms[room_code])
         })
 
         while True:
-            # Listen for actions from the players' phones (like Swiping or 'Start Game')
             data = await websocket.receive_json()
             
             if data["action"] == "start_game":
-                # Sending mock data to the connected players to simulate API response!
                 await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": MOCK_MOVIES})
                 
             elif data["action"] == "swipe_right":
                 movie_id = data["movie_id"]
                 active_rooms[room_code]["scores"][movie_id] = active_rooms[room_code]["scores"].get(movie_id, 0) + 1
                 
-                # Check if everyone matched on this movie
                 if active_rooms[room_code]["scores"][movie_id] == len(manager.rooms[room_code]):
                     await manager.broadcast_to_room(room_code, {
                         "type": "match_found",

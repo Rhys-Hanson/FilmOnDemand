@@ -12,10 +12,7 @@ import { Movie } from './data/movies';
 
 export type AppState = 'ENTRY' | 'SETTINGS' | 'LOBBY' | 'SWIPING' | 'COUNTDOWN' | 'RESULTS';
 
-// Note: A more robust app might use UUIDs, this gives us a random unique id for the user session
 const CLIENT_ID = Math.random().toString(36).substring(2, 10);
-
-// Dynamically resolve the backend URL based on how the user connects to this frontend
 const hostIP = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
 const WS_URL = `ws://${hostIP}:8000/ws/rooms`;
 const API_URL = `http://${hostIP}:8000/api/rooms`;
@@ -37,7 +34,6 @@ export default function App() {
       const codeFromUrl = pathSegments[2].toUpperCase();
       if (codeFromUrl && appState === 'ENTRY') {
         handleJoinRoom(codeFromUrl);
-        // Clean up URL so it doesn't look weird
         window.history.replaceState({}, '', '/');
       }
     }
@@ -95,9 +91,7 @@ export default function App() {
   };
 
   const handleStartSwiping = (filters: RoomFilters) => {
-    // Notify the server to start the game with the selected settings
     sendJsonMessage({ action: 'start_game', filters });
-    // Note: State changes to SWIPING automatically when the server broadcasts 'game_started'
   };
 
   const handlePlayerFinished = () => {
