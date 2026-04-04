@@ -92,7 +92,7 @@ class WatchmodeAPI:
             return json.loads(response.read().decode())
 
     def get_watchmode_movie_info(self, movie_input):
-        search_value = movie_input
+        search_value = movie_input.lower()
         params = {
             "apiKey": self.API_KEY,
             "search_field": "name",
