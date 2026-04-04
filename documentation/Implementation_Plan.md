@@ -1,5 +1,26 @@
 # Film On Demand: Full Implementation Plan
 
+## Quick Task Tracker
+Use this table to keep track of exactly what has been accomplished, and what your teammates still need to integrate.
+
+| Phase | Component | Assigned To | Status |
+|---|---|---|---|
+| **Phase 1: Database APIs** | Refactor `TMDbAPI` to return JSON dicts with `posterUrl` / `castList` | Back-End Team | 🔴 Not Started |
+| **Phase 1: Database APIs** | Refactor `WatchmodeAPI` to natively return streaming platform info | Back-End Team | 🔴 Not Started |
+| **Phase 1: Database APIs** | Update `FilmOnDemand/main.py` wrapper to not use `input()` | Back-End Team | 🔴 Not Started |
+| **Phase 2: Game Engine** | Scaffold FastAPI server and Basic Room Manager | Front-End Team | 🟢 Complete |
+| **Phase 2: Game Engine** | Implement `GameState` score caching (`server/game_state.py`) | Back-End Team | 🔴 Not Started |
+| **Phase 2: Game Engine** | Hook live filter logic to `start_game` WebSocket event | Back-End Team | 🔴 Not Started |
+| **Phase 3: React Frontend** | `react-use-websocket` integration & dynamic architecture | Front-End Team | 🟢 Complete |
+| **Phase 3: React Frontend** | Dynamic Local Network Wi-Fi routing & QR scanning | Front-End Team | 🟢 Complete |
+| **Phase 3: React Frontend** | Host Game Settings/Filter transmission | Front-End Team | 🟢 Complete |
+| **Phase 3: React Frontend** | `SwipeScreen` syncing, Wait Screen overlay | Front-End Team | 🟢 Complete |
+| **Phase 3: React Frontend** | Build out the final `ResultsScreen.tsx` UI | Front-End Team | 🔴 Not Started |
+| **Phase 4: Deployment** | Deploy Python FastAPI server onto Render.com | Whole Team | 🔴 Not Started |
+| **Phase 4: Deployment** | Deploy Vite React App onto Vercel / Netlify | Whole Team | 🔴 Not Started |
+
+---
+
 ## 1. Executive Summary
 **Objective:** Transform the current API wrapper/UI prototype into a full-scale, deployed web application. 
 **Core Concept:** A party-game style movie recommendation platform. Users join a "room" via a code (like Kahoot), select their filters, and swipe left/right on movies (like Tinder). When everyone matches on a movie, the group has their winner.
