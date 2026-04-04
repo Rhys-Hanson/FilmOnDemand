@@ -51,7 +51,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
         <div className="glass-dark rounded-[24px] p-6 flex flex-col items-center justify-center border border-white/5 relative overflow-hidden shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-orange-500/5" />
           <div className="bg-white p-3 rounded-2xl mb-4 relative z-10 shadow-lg">
-             <QRCode value={`http://localhost:5173/join/${roomCode}`} size={120} />
+             <QRCode value={`http://${window.location.host}/join/${roomCode}`} size={120} />
           </div>
           <p className="text-neutral-400 text-sm font-semibold uppercase tracking-widest mb-1 relative z-10">Room Code</p>
           <div className="text-4xl font-mono font-black tracking-[0.2em] text-white relative z-10 drop-shadow-md">

@@ -14,8 +14,11 @@ export type AppState = 'ENTRY' | 'SETTINGS' | 'LOBBY' | 'SWIPING' | 'COUNTDOWN' 
 
 // Note: A more robust app might use UUIDs, this gives us a random unique id for the user session
 const CLIENT_ID = Math.random().toString(36).substring(2, 10);
-const WS_URL = 'ws://127.0.0.1:8000/ws/rooms';
-const API_URL = 'http://127.0.0.1:8000/api/rooms';
+
+// Dynamically resolve the backend URL based on how the user connects to this frontend
+const hostIP = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+const WS_URL = `ws://${hostIP}:8000/ws/rooms`;
+const API_URL = `http://${hostIP}:8000/api/rooms`;
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>('ENTRY');
@@ -26,6 +29,19 @@ export default function App() {
   
   const [scores, setScores] = useState<Record<string, number>>({});
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+
+  // Auto-join routing when scanned from QR code
+  useEffect(() => {
+    const pathSegments = window.location.pathname.split('/');
+    if (pathSegments.length >= 3 && pathSegments[1] === 'join') {
+      const codeFromUrl = pathSegments[2].toUpperCase();
+      if (codeFromUrl && appState === 'ENTRY') {
+        handleJoinRoom(codeFromUrl);
+        // Clean up URL so it doesn't look weird
+        window.history.replaceState({}, '', '/');
+      }
+    }
+  }, []);
 
   const socketUrl = roomCode ? `${WS_URL}/${roomCode}/${CLIENT_ID}` : null;
   const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
