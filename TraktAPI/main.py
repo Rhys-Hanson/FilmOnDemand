@@ -78,10 +78,9 @@ class TraktAPI:
             - trending_rank          : Rank in Trakt trending (None if not trending)
             - watchers               : Number of people watching right now (from trending)
             - popularity_rank        : Rank in Trakt all-time popular (None if not in top 100)
-            - plays_weekly           : Total plays this week (from played/weekly)
-            - unique_watchers_weekly : Unique watchers this week (from watched/weekly)
-            - collectors             : Number of users who collected the movie
-            - collect_count          : Total number of times collected
+            - total_plays            : Total plays (all time, from /stats)
+            - total_watchers         : Unique watchers (all time, from /stats)
+            - collectors             : Number of users who collected the movie (from /stats)
             - trakt_rating           : Trakt community rating out of 10
             - rating_votes           : Number of votes for the rating
             - trakt_id               : Trakt internal ID (useful for other API calls)
@@ -122,27 +121,7 @@ class TraktAPI:
                 t = movie.get("title", "")
                 popular_map[t.lower()] = rank
 
-        # Played (weekly): total plays and unique watchers this week
-        played_map = {}  # title.lower() -> {plays, watchers}
-        r = requests.get(f"{self.base_url}/movies/played/weekly", headers=headers, params={"limit": limit})
-        if r.status_code == 200:
-            for entry in r.json():
-                t = entry.get("movie", {}).get("title", "")
-                played_map[t.lower()] = {
-                    "plays_weekly": entry.get("plays", 0),
-                    "unique_watchers_weekly": entry.get("watchers", 0)
-                }
-
-        # Collected (weekly): collectors and collect count
-        collected_map = {}  # title.lower() -> {collectors, collects}
-        r = requests.get(f"{self.base_url}/movies/collected/weekly", headers=headers, params={"limit": limit})
-        if r.status_code == 200:
-            for entry in r.json():
-                t = entry.get("movie", {}).get("title", "")
-                collected_map[t.lower()] = {
-                    "collectors": entry.get("collectors", 0),
-                    "collect_count": entry.get("collects", 0)
-                }
+        # (Per-movie stats are fetched individually via /movies/{slug}/stats below)
 
         # ── Step 2: For each movie, look up its slug and ratings ──
         ranked = []
@@ -177,6 +156,14 @@ class TraktAPI:
                     else:
                         entry["trakt_rating"] = "N/A"
                         entry["rating_votes"] = "N/A"
+
+                    # Fetch per-movie stats (watchers, plays, collectors)
+                    r3 = requests.get(f"{self.base_url}/movies/{slug}/stats", headers=headers)
+                    if r3.status_code == 200:
+                        sd = r3.json()
+                        entry["total_plays"]    = sd.get("plays", 0)
+                        entry["total_watchers"] = sd.get("watchers", 0)
+                        entry["collectors"]     = sd.get("collectors", 0)
             else:
                 entry["year"]         = "N/A"
                 entry["trakt_id"]     = "N/A"
@@ -186,17 +173,15 @@ class TraktAPI:
                 entry["rating_votes"] = "N/A"
 
             # ── Step 3: Pull data from the pre-fetched category maps ──
-            trending_data  = trending_map.get(title_lower, {})
-            played_data    = played_map.get(title_lower, {})
-            collected_data = collected_map.get(title_lower, {})
+            trending_data = trending_map.get(title_lower, {})
 
-            entry["trending_rank"]          = trending_data.get("trending_rank", None)
-            entry["watchers"]               = trending_data.get("watchers", 0)
-            entry["popularity_rank"]        = popular_map.get(title_lower, None)
-            entry["plays_weekly"]           = played_data.get("plays_weekly", 0)
-            entry["unique_watchers_weekly"] = played_data.get("unique_watchers_weekly", 0)
-            entry["collectors"]             = collected_data.get("collectors", 0)
-            entry["collect_count"]          = collected_data.get("collect_count", 0)
+            entry["trending_rank"]   = trending_data.get("trending_rank", None)
+            entry["watchers"]        = trending_data.get("watchers", 0)
+            entry["popularity_rank"] = popular_map.get(title_lower, None)
+            # Per-movie stats default to 0 if the slug lookup or /stats call failed
+            entry.setdefault("total_plays", 0)
+            entry.setdefault("total_watchers", 0)
+            entry.setdefault("collectors", 0)
 
             # Separate found vs not found for sorting
             if entry["trending_rank"] is not None or entry["popularity_rank"] is not None:
@@ -242,7 +227,7 @@ class TraktAPI:
         data = response.json()
         movies = []
 
-        for rank, entry in enumerate(data, start=0):
+        for rank, entry in enumerate(data, start=1):
             # Each category returns data in a slightly different structure
             if category == "trending":
                 movie = entry.get("movie", {})
@@ -423,10 +408,9 @@ def main():
                 print(f"      Trending Rank      : {'#' + str(movie['trending_rank']) if movie['trending_rank'] else 'Not trending'}")
                 print(f"      Watchers Right Now : {movie.get('watchers', 0):,}")
                 print(f"      Popularity Rank    : {'#' + str(movie['popularity_rank']) if movie['popularity_rank'] else 'Not in top 100'}")
-                print(f"      Plays This Week    : {movie.get('plays_weekly', 0):,}")
-                print(f"      Unique Watchers/wk : {movie.get('unique_watchers_weekly', 0):,}")
+                print(f"      Total Plays        : {movie.get('total_plays', 0):,}")
+                print(f"      Total Watchers     : {movie.get('total_watchers', 0):,}")
                 print(f"      Collectors         : {movie.get('collectors', 0):,}")
-                print(f"      Times Collected    : {movie.get('collect_count', 0):,}")
                 print(f"      IMDb ID            : {movie.get('imdb_id', 'N/A')}")
                 print(f"      TMDb ID            : {movie.get('tmdb_id', 'N/A')}")
             print(f"\n{'=' * 55}\n")

@@ -68,10 +68,9 @@ class FilmOnDemand:
             movie_info[movie]["trending_rank"] = trakt_data.get("trending_rank", None)
             movie_info[movie]["watchers"] = trakt_data.get("watchers", 0)
             movie_info[movie]["popularity_rank"] = trakt_data.get("popularity_rank", None)
-            movie_info[movie]["plays_weekly"] = trakt_data.get("plays_weekly", 0)
-            movie_info[movie]["unique_watchers_weekly"] = trakt_data.get("unique_watchers_weekly", 0)
+            movie_info[movie]["total_plays"] = trakt_data.get("total_plays", 0)
+            movie_info[movie]["total_watchers"] = trakt_data.get("total_watchers", 0)
             movie_info[movie]["collectors"] = trakt_data.get("collectors", 0)
-            movie_info[movie]["collect_count"] = trakt_data.get("collect_count", 0)
             movie_info[movie]["trakt_rating"] = trakt_data.get("trakt_rating", "N/A")
             movie_info[movie]["rating_votes"] = trakt_data.get("rating_votes", "N/A")
 
