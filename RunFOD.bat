@@ -26,8 +26,8 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [2/3] Starting FastAPI backend on port 8000...
-rem cmd /k keeps the window OPEN so you can see any error messages
-start "FastAPI Backend" cmd /k "cd /d "%PROJECT_ROOT%" && uvicorn server.main:app --reload --host 0.0.0.0 --port 8000"
+rem /d sets working directory so uvicorn finds the server package correctly
+start "FastAPI Backend" /d "%PROJECT_ROOT%" cmd /k "uvicorn server.main:app --reload --host 0.0.0.0 --port 8000"
 
 echo Waiting 3 seconds for backend to start...
 timeout /t 3 /nobreak > nul
