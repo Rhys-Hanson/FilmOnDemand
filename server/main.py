@@ -5,7 +5,6 @@ import random
 import string
 from .room_manager import RoomManager
 from .mock_data import MOCK_MOVIES
-from FilmOnDemand.main import FilmOnDemand
 import json
 
 USE_MOCK_DATA = True
@@ -20,7 +19,13 @@ app.add_middleware(
 )
 
 # In-memory storage for active rooms
-active_rooms = {}
+active_rooms = {
+    "000000": {
+        "players": 0,
+        "movies": [],
+        "scores": {} 
+    }
+}
 manager = RoomManager()
 
 class RoomSettings(BaseModel):
@@ -71,6 +76,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                 if USE_MOCK_DATA:
                     deck = MOCK_MOVIES
                 else:
+                    from FilmOnDemand.main import FilmOnDemand
                     engine = FilmOnDemand()
                     deck = engine.run_movie_pull(json.dumps(data))
                     
