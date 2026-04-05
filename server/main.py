@@ -106,6 +106,20 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                             "type": "match_found",
                             "movie_id": movie_id
                         })
+
+            elif data["action"] == "super_like":
+                movie_id = data["movie_id"]
+                game_state = active_rooms[room_code].get("game_state")
+                
+                if game_state:
+                    game_state.register_super_like(movie_id)
+                    
+                    # Unanimous match detection (super-like counts as a like too)
+                    if game_state.scores[movie_id] >= game_state.total_players * 2:
+                        await manager.broadcast_to_room(room_code, {
+                            "type": "match_found",
+                            "movie_id": movie_id
+                        })
                         
             elif data["action"] == "player_finished":
                 game_state = active_rooms[room_code].get("game_state")
@@ -115,10 +129,11 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                     
                     # If this was the last player, game over!
                     if game_state.is_game_over():
-                        final_scores = game_state.get_final_results()
+                        final = game_state.get_final_results()
                         await manager.broadcast_to_room(room_code, {
                             "type": "game_over",
-                            "scores": final_scores
+                            "scores": final["scores"],
+                            "super_likes": final["super_likes"],
                         })
 
     except WebSocketDisconnect:
@@ -143,8 +158,9 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             game_state.total_players -= 1
             # If that decrement tips us over the finish line, end the game now
             if game_state.is_game_over():
-                final_scores = game_state.get_final_results()
+                final = game_state.get_final_results()
                 await manager.broadcast_to_room(room_code, {
                     "type": "game_over",
-                    "scores": final_scores
+                    "scores": final["scores"],
+                    "super_likes": final["super_likes"],
                 })

@@ -8,7 +8,7 @@ import { cn } from '../lib/utils';
 interface SwipeScreenProps {
   movies: Movie[];
   onPlayerFinished: () => void;
-  onSwipeServer: (movieId: string, liked: boolean) => void;
+  onSwipeServer: (movieId: string, liked: boolean, isSuperLike?: boolean) => void;
 }
 
 export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeScreenProps) {
@@ -44,7 +44,7 @@ export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeSc
         [movie.id]: (prev[movie.id] || 0) + 2
       }));
       setSuperLikesLeft(prev => prev - 1);
-      onSwipeServer(movie.id, true);
+      onSwipeServer(movie.id, true, true);  // isSuperLike = true
       nextMovie();
     }
   };

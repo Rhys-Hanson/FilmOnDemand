@@ -25,6 +25,7 @@ export default function App() {
   const [deck, setDeck] = useState<Movie[]>([]);
   
   const [scores, setScores] = useState<Record<string, number>>({});
+  const [superLikes, setSuperLikes] = useState<Record<string, number>>({});
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [disconnectToast, setDisconnectToast] = useState<string | null>(null);
 
@@ -65,6 +66,7 @@ export default function App() {
         setAppState('SWIPING');
       } else if (data.type === 'game_over') {
         setScores(data.scores || {});
+        setSuperLikes(data.super_likes || {});
         setAppState('COUNTDOWN');
       }
     }
@@ -118,8 +120,10 @@ export default function App() {
     setAppState(isHost ? 'SETTINGS' : 'LOBBY');
   };
 
-  const handleServerSwipe = (movieId: string, liked: boolean) => {
-    if (liked) {
+  const handleServerSwipe = (movieId: string, liked: boolean, isSuperLike?: boolean) => {
+    if (isSuperLike) {
+      sendJsonMessage({ action: 'super_like', movie_id: movieId });
+    } else if (liked) {
       sendJsonMessage({ action: 'swipe_right', movie_id: movieId });
     }
   };
@@ -189,7 +193,8 @@ export default function App() {
       {appState === 'RESULTS' && (
         <ResultsScreen 
           movies={deck} 
-          scores={scores} 
+          scores={scores}
+          superLikes={superLikes}
           onReroll={handleReroll} 
           onMovieClick={setSelectedMovie} 
         />

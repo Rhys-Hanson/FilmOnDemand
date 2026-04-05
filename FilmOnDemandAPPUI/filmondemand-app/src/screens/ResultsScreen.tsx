@@ -2,23 +2,31 @@ import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Movie } from '../data/movies';
-import { RotateCcw, Trophy, Star } from 'lucide-react';
+import { RotateCcw, Trophy, Star, Flame } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ResultsScreenProps {
   movies: Movie[];
   scores: Record<string, number>;
+  superLikes: Record<string, number>;
   onReroll: () => void;
   onMovieClick: (movie: Movie) => void;
 }
 
-export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: ResultsScreenProps) {
+export function ResultsScreen({ movies, scores, superLikes, onReroll, onMovieClick }: ResultsScreenProps) {
   // Sort movies by score descending
   const sortedMovies = [...movies].sort((a, b) => {
     const scoreA = scores[a.id] || 0;
     const scoreB = scores[b.id] || 0;
     return scoreB - scoreA;
   });
+
+  // Find the movie with the most super likes (if any were cast)
+  const mostSuperLikedId = Object.keys(superLikes).length > 0
+    ? Object.entries(superLikes).reduce((best, [id, count]) =>
+        count > (superLikes[best] || 0) ? id : best
+      , Object.keys(superLikes)[0])
+    : null;
 
   const top3 = sortedMovies.slice(0, 3);
   const others = sortedMovies.slice(3, 10);
@@ -77,6 +85,12 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-2">
                   <span className="text-white font-bold text-sm text-center px-1 leading-tight">{top3[1].title}</span>
                 </div>
+                {mostSuperLikedId === top3[1].id && (
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-rose-500 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Star className="w-3 h-3 text-white fill-white" />
+                    <span className="text-white text-[10px] font-black leading-none">Super Liked</span>
+                  </div>
+                )}
               </div>
               <div className="w-full h-24 bg-gradient-to-t from-neutral-800 to-neutral-700 rounded-t-xl flex items-center justify-center border-t-4 border-neutral-400 relative">
                 <span className="text-4xl font-black text-neutral-500">2</span>
@@ -104,6 +118,12 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
                 <div className="absolute top-2 right-2 bg-rose-500 rounded-full p-1 shadow-lg">
                   <Trophy className="w-4 h-4 text-white" />
                 </div>
+                {mostSuperLikedId === top3[0].id && (
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-rose-500 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Star className="w-3 h-3 text-white fill-white" />
+                    <span className="text-white text-[10px] font-black leading-none">Super Liked</span>
+                  </div>
+                )}
               </div>
               <div className="w-full h-32 bg-gradient-to-t from-rose-900 to-rose-600 rounded-t-xl flex items-center justify-center border-t-4 border-rose-400 relative shadow-[0_0_30px_rgba(244,63,94,0.3)]">
                 <span className="text-5xl font-black text-rose-200">1</span>
@@ -128,6 +148,12 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-2">
                   <span className="text-white font-bold text-sm text-center px-1 leading-tight">{top3[2].title}</span>
                 </div>
+                {mostSuperLikedId === top3[2].id && (
+                  <div className="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-rose-500 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Star className="w-3 h-3 text-white fill-white" />
+                    <span className="text-white text-[10px] font-black leading-none">Super Liked</span>
+                  </div>
+                )}
               </div>
               <div className="w-full h-20 bg-gradient-to-t from-neutral-900 to-neutral-800 rounded-t-xl flex items-center justify-center border-t-4 border-amber-700/50 relative">
                 <span className="text-3xl font-black text-neutral-600">3</span>
@@ -158,6 +184,14 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
               <div className="flex-1">
                 <h4 className="text-white font-medium line-clamp-1">{movie.title}</h4>
                 <p className="text-neutral-400 text-sm">{movie.year}</p>
+                {mostSuperLikedId === movie.id && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-500/30 rounded-full px-2 py-0.5">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      <span className="text-amber-300 text-[10px] font-bold">Most Super Liked</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="bg-neutral-800 px-3 py-1 rounded-full text-sm font-medium text-neutral-300">
                 {scores[movie.id] || 0} pts
