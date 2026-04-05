@@ -101,7 +101,7 @@ export function DualRangeSlider({ min, max, value, onChange }: DualRangeSliderPr
   const rightPercent = ((localValue[1] - min) / (max - min)) * 100;
 
   return (
-    <div className="py-2 w-full select-none">
+    <div className="py-2 w-full select-none relative z-0">
       <div className="flex justify-between items-center text-white font-medium mb-10">
         <div className="relative group z-10">
           <label className="absolute -top-6 left-2 text-[11px] uppercase font-bold text-neutral-400 tracking-widest drop-shadow-md">From</label>
@@ -153,7 +153,7 @@ export function DualRangeSlider({ min, max, value, onChange }: DualRangeSliderPr
           onPointerDown={(e) => handlePointerDown(e, 'left')}
           whileHover={{ scale: 1.25 }}
           whileTap={{ scale: 0.9 }}
-          className="absolute top-1/2 -translate-y-1/2 -ml-3.5 w-7 h-7 bg-white rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.8)] border-[4px] border-neutral-950 cursor-grab active:cursor-grabbing z-20 flex items-center justify-center touch-none group hover:border-rose-500 transition-colors"
+          className="absolute top-1/2 -translate-y-1/2 -ml-3.5 w-7 h-7 bg-white rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.8)] border-[4px] border-neutral-950 cursor-grab active:cursor-grabbing z-10 flex items-center justify-center touch-none group hover:border-rose-500 transition-colors"
         >
           <div className="w-1.5 h-1.5 bg-rose-500 rounded-full group-hover:scale-125 transition-transform" />
         </motion.div>

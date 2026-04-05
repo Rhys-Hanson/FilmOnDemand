@@ -196,7 +196,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
       </motion.div>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent z-50 pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent z-[100] pointer-events-none">
         <div className="max-w-md mx-auto pointer-events-auto">
           <motion.button 
             onClick={() => {
