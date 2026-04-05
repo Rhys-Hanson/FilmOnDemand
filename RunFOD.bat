@@ -3,32 +3,44 @@ echo ================================================
 echo  FilmOnDemand - Starting Servers
 echo ================================================
 
+rem Store the project root so backend window always has the right cwd
+set PROJECT_ROOT=%~dp0
+
+echo.
+echo Checking Python installation...
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ERROR: Python not found. Install Python from https://python.org and check "Add to PATH".
+    pause
+    exit /b 1
+)
+
 echo.
 echo [1/3] Installing Python backend dependencies...
-pip install -r requirements.txt
+pip install -r "%PROJECT_ROOT%requirements.txt"
 if %errorlevel% neq 0 (
-    echo ERROR: pip install failed. Make sure Python and pip are installed.
+    echo ERROR: pip install failed.
     pause
     exit /b 1
 )
 
 echo.
 echo [2/3] Starting FastAPI backend on port 8000...
-rem Use cmd /k so the window STAYS OPEN if there is an error
-start "FastAPI Backend" cmd /k "uvicorn server.main:app --reload --host 0.0.0.0 --port 8000 & pause"
+rem cmd /k keeps the window OPEN so you can see any error messages
+start "FastAPI Backend" cmd /k "cd /d "%PROJECT_ROOT%" && uvicorn server.main:app --reload --host 0.0.0.0 --port 8000"
 
 echo Waiting 3 seconds for backend to start...
 timeout /t 3 /nobreak > nul
 
 echo.
 echo [3/3] Starting React frontend...
-cd FilmOnDemandAPPUI\filmondemand-app
+cd /d "%PROJECT_ROOT%FilmOnDemandAPPUI\filmondemand-app"
 
 if not exist "node_modules\" (
     echo Installing UI dependencies...
     call npm install
     if %errorlevel% neq 0 (
-        echo ERROR: npm install failed. Make sure Node.js is installed.
+        echo ERROR: npm install failed. Make sure Node.js is installed from https://nodejs.org
         pause
         exit /b 1
     )
