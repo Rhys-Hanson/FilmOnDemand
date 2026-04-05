@@ -70,6 +70,12 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             "count": len(manager.rooms[room_code])
         })
 
+        # Special "Test Mode": Auto-start game for room 000000
+        if room_code == "000000":
+            if "game_state" not in active_rooms[room_code]:
+                active_rooms[room_code]["game_state"] = GameState(room_code, 1) # Support single player test
+            await websocket.send_json({"type": "game_started", "deck": MOCK_MOVIES})
+
         while True:
             data = await websocket.receive_json()
             
@@ -117,4 +123,28 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_code)
-        await manager.broadcast_to_room(room_code, {"type": "player_left"})
+        
+        remaining = len(manager.rooms.get(room_code, []))
+        
+        # Clean up active_rooms entry if the room is now completely empty
+        if remaining == 0 and room_code in active_rooms:
+            del active_rooms[room_code]
+            return  # Nothing left to broadcast to
+        
+        await manager.broadcast_to_room(room_code, {
+            "type": "player_left",
+            "count": remaining
+        })
+        
+        # If a game is in progress, reduce expected player count so the game
+        # can still reach game_over without waiting for the disconnected player.
+        game_state = active_rooms.get(room_code, {}).get("game_state")
+        if game_state and game_state.total_players > 1:
+            game_state.total_players -= 1
+            # If that decrement tips us over the finish line, end the game now
+            if game_state.is_game_over():
+                final_scores = game_state.get_final_results()
+                await manager.broadcast_to_room(room_code, {
+                    "type": "game_over",
+                    "scores": final_scores
+                })

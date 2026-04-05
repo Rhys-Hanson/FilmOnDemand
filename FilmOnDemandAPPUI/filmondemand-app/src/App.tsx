@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'motion/react';
-import useWebSocket from 'react-use-websocket';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { EntryScreen } from './screens/EntryScreen';
 import { SettingsScreen, RoomFilters } from './screens/SettingsScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
@@ -26,6 +26,7 @@ export default function App() {
   
   const [scores, setScores] = useState<Record<string, number>>({});
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [disconnectToast, setDisconnectToast] = useState<string | null>(null);
 
   // Auto-join routing when scanned from QR code
   useEffect(() => {
@@ -40,15 +41,25 @@ export default function App() {
   }, []);
 
   const socketUrl = roomCode ? `${WS_URL}/${roomCode}/${CLIENT_ID}` : null;
-  const { sendJsonMessage, lastJsonMessage } = useWebSocket(socketUrl, {
+  const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(socketUrl, {
     shouldReconnect: () => true,
+    reconnectAttempts: 10,
+    reconnectInterval: 3000,
   });
+
+  const isConnected = readyState === ReadyState.OPEN;
+  const isReconnecting = roomCode !== '' && !isConnected;
 
   useEffect(() => {
     if (lastJsonMessage) {
       const data = lastJsonMessage as any;
       if (data.type === 'player_joined') {
         setPlayerCount(data.count);
+      } else if (data.type === 'player_left') {
+        setPlayerCount(data.count);
+        const remaining = data.count;
+        setDisconnectToast(`A player disconnected. ${remaining} player${remaining !== 1 ? 's' : ''} remaining.`);
+        setTimeout(() => setDisconnectToast(null), 4000);
       } else if (data.type === 'game_started') {
         setDeck(data.deck);
         setAppState('SWIPING');
@@ -65,7 +76,7 @@ export default function App() {
       if (res.ok) {
         setRoomCode(code);
         setIsHost(false);
-        setAppState('LOBBY');
+        setAppState(code === '000000' ? 'SWIPING' : 'LOBBY');
       } else {
         alert("Room not found!");
       }
@@ -115,6 +126,43 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 font-sans overflow-hidden selection:bg-rose-500/30">
+
+      {/* Reconnecting banner — appears when WebSocket drops mid-session */}
+      <AnimatePresence>
+        {isReconnecting && (
+          <motion.div
+            initial={{ y: -48, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -48, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="fixed top-0 inset-x-0 z-[200] flex items-center justify-center gap-2 bg-amber-500/90 backdrop-blur-md text-black text-sm font-semibold py-2.5 px-4 shadow-lg"
+          >
+            <motion.span
+              animate={{ opacity: [1, 0.4, 1] }}
+              transition={{ repeat: Infinity, duration: 1.2 }}
+              className="w-2 h-2 rounded-full bg-black/50 inline-block"
+            />
+            Connection lost — reconnecting…
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Player-left toast */}
+      <AnimatePresence>
+        {disconnectToast && (
+          <motion.div
+            initial={{ y: 80, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 80, opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            className="fixed bottom-28 inset-x-0 z-[200] flex justify-center pointer-events-none"
+          >
+            <div className="bg-neutral-800/95 backdrop-blur-md border border-neutral-700 text-neutral-200 text-sm font-medium px-4 py-3 rounded-2xl shadow-2xl max-w-sm mx-4 text-center">
+              {disconnectToast}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {appState === 'ENTRY' && (
         <EntryScreen onJoin={handleJoinRoom} onCreate={handleCreateRoom} />
       )}
