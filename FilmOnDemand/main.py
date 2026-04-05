@@ -75,7 +75,11 @@ class FilmOnDemand:
 # Takes the list of movies titles
     def get_movie_info(self):
         print("\n--- Fetching TMDb Details ---")
-        movie_info = {movie : self.tmdb.movie_info(movie) for movie in self.movie_titles}
+        movie_info_list = []
+        for movie in self.movie_titles:
+            info = self.tmdb.movie_info(movie)
+            info["title"] = movie # Ensure title is always present
+            movie_info_list.append(info)
 
         # Fetch Trakt stats for all movies in one batch
         print("\n--- Fetching Trakt Details ---")
@@ -84,18 +88,18 @@ class FilmOnDemand:
         # Build a lookup by title so we can match results back
         trakt_lookup = {entry["title"]: entry for entry in trakt_results}
 
-        for movie in self.movie_titles:
-            trakt_data = trakt_lookup.get(movie, {})
-            movie_info[movie]["trending_rank"] = trakt_data.get("trending_rank", None)
-            movie_info[movie]["watchers"] = trakt_data.get("watchers", 0)
-            movie_info[movie]["popularity_rank"] = trakt_data.get("popularity_rank", None)
-            movie_info[movie]["total_plays"] = trakt_data.get("total_plays", 0)
-            movie_info[movie]["total_watchers"] = trakt_data.get("total_watchers", 0)
-            movie_info[movie]["collectors"] = trakt_data.get("collectors", 0)
-            movie_info[movie]["trakt_rating"] = trakt_data.get("trakt_rating", "N/A")
-            movie_info[movie]["rating_votes"] = trakt_data.get("rating_votes", "N/A")
+        for movie_dict in movie_info_list:
+            trakt_data = trakt_lookup.get(movie_dict["title"], {})
+            movie_dict["trending_rank"] = trakt_data.get("trending_rank", None)
+            movie_dict["watchers"] = trakt_data.get("watchers", 0)
+            movie_dict["popularity_rank"] = trakt_data.get("popularity_rank", None)
+            movie_dict["total_plays"] = trakt_data.get("total_plays", 0)
+            movie_dict["total_watchers"] = trakt_data.get("total_watchers", 0)
+            movie_dict["collectors"] = trakt_data.get("collectors", 0)
+            movie_dict["trakt_rating"] = trakt_data.get("trakt_rating", "N/A")
+            movie_dict["rating_votes"] = trakt_data.get("rating_votes", "N/A")
         
-        self.movies_with_desc = json.dumps(movie_info, indent=4)
+        self.movies_with_desc = movie_info_list
         return None
     
     def run_movie_pull(self, settings):

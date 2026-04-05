@@ -5,7 +5,10 @@ import random
 import string
 from .room_manager import RoomManager
 from .mock_data import MOCK_MOVIES
+from FilmOnDemand.main import FilmOnDemand
+import json
 
+USE_MOCK_DATA = True
 app = FastAPI()
 
 app.add_middleware(
@@ -21,9 +24,11 @@ active_rooms = {}
 manager = RoomManager()
 
 class RoomSettings(BaseModel):
-    genres: list[str]
-    streaming_services: list[str]
-    year_range: list[int]
+    genres: list[str] = []
+    streaming_services: list[str] = []
+    year_range: list[int] = []
+    actors: list[str] = []
+    movies: list[str] = []
 
 # --- REST ENDPOINTS ---
 
@@ -63,7 +68,13 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             data = await websocket.receive_json()
             
             if data["action"] == "start_game":
-                await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": MOCK_MOVIES})
+                if USE_MOCK_DATA:
+                    deck = MOCK_MOVIES
+                else:
+                    engine = FilmOnDemand()
+                    deck = engine.run_movie_pull(json.dumps(data))
+                    
+                await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": deck})
                 
             elif data["action"] == "swipe_right":
                 movie_id = data["movie_id"]
