@@ -2,7 +2,6 @@
 
 from dotenv import load_dotenv
 import os
-from .api_data import genre_data, source_data
 import urllib.request
 from urllib.parse import urlencode
 from pathlib import Path 
@@ -13,8 +12,13 @@ class WatchmodeAPI:
 
 # creates an object of the class
     def __init__(self):
-        self.genre_data = genre_data
-        self.source_data = source_data
+        data_path = Path(__file__).resolve().parent / "api_data.json"
+
+        with open(data_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        self.genre_data = data["genre_data"]
+        self.source_data = data["source_data"]
         
         ROOT_DIR = Path(__file__).resolve().parent.parent
         load_dotenv(ROOT_DIR / ".env")
@@ -156,4 +160,3 @@ class WatchmodeAPI:
         data = self.fetch_movies_by_genre(genre_ids, source_ids)
         movie_list = self.parse_results(data)
         return movie_list
-
