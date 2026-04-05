@@ -26,6 +26,7 @@ export default function App() {
   
   const [scores, setScores] = useState<Record<string, number>>({});
   const [superLikes, setSuperLikes] = useState<Record<string, number>>({});
+  const [unanimous, setUnanimous] = useState<string[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [disconnectToast, setDisconnectToast] = useState<string | null>(null);
 
@@ -67,6 +68,7 @@ export default function App() {
       } else if (data.type === 'game_over') {
         setScores(data.scores || {});
         setSuperLikes(data.super_likes || {});
+        setUnanimous(data.unanimous || []);
         setAppState('COUNTDOWN');
       }
     }
@@ -120,12 +122,14 @@ export default function App() {
     setAppState(isHost ? 'SETTINGS' : 'LOBBY');
   };
 
-  const handleServerSwipe = (movieId: string, liked: boolean, isSuperLike?: boolean) => {
-    if (isSuperLike) {
-      sendJsonMessage({ action: 'super_like', movie_id: movieId });
-    } else if (liked) {
-      sendJsonMessage({ action: 'swipe_right', movie_id: movieId });
-    }
+  const handleServerSwipe = (movieId: string, voteType: 'like' | 'dislike' | 'super_like' | 'seen_it') => {
+    const actionMap: Record<string, string> = {
+      like: 'swipe_right',
+      dislike: 'swipe_left',
+      super_like: 'super_like',
+      seen_it: 'seen_it',
+    };
+    sendJsonMessage({ action: actionMap[voteType], movie_id: movieId });
   };
 
   return (
@@ -195,6 +199,7 @@ export default function App() {
           movies={deck} 
           scores={scores}
           superLikes={superLikes}
+          unanimous={unanimous}
           onReroll={handleReroll} 
           onMovieClick={setSelectedMovie} 
         />

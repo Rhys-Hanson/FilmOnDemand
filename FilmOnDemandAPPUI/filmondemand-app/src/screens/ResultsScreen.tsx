@@ -2,18 +2,19 @@ import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Movie } from '../data/movies';
-import { RotateCcw, Trophy, Star, Flame } from 'lucide-react';
+import { RotateCcw, Trophy, Star, Heart } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ResultsScreenProps {
   movies: Movie[];
   scores: Record<string, number>;
   superLikes: Record<string, number>;
+  unanimous: string[];
   onReroll: () => void;
   onMovieClick: (movie: Movie) => void;
 }
 
-export function ResultsScreen({ movies, scores, superLikes, onReroll, onMovieClick }: ResultsScreenProps) {
+export function ResultsScreen({ movies, scores, superLikes, unanimous, onReroll, onMovieClick }: ResultsScreenProps) {
   // Sort movies by score descending
   const sortedMovies = [...movies].sort((a, b) => {
     const scoreA = scores[a.id] || 0;
@@ -91,6 +92,14 @@ export function ResultsScreen({ movies, scores, superLikes, onReroll, onMovieCli
                     <span className="text-white text-[10px] font-black leading-none">Super Liked</span>
                   </div>
                 )}
+                {unanimous.includes(top3[1].id) && (
+                  <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+                    <div className="bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                      <Heart className="w-3 h-3 text-white fill-white" />
+                      <span className="text-white text-[10px] font-black leading-none">Everyone Liked</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="w-full h-24 bg-gradient-to-t from-neutral-800 to-neutral-700 rounded-t-xl flex items-center justify-center border-t-4 border-neutral-400 relative">
                 <span className="text-4xl font-black text-neutral-500">2</span>
@@ -124,6 +133,14 @@ export function ResultsScreen({ movies, scores, superLikes, onReroll, onMovieCli
                     <span className="text-white text-[10px] font-black leading-none">Super Liked</span>
                   </div>
                 )}
+                {unanimous.includes(top3[0].id) && (
+                  <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+                    <div className="bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                      <Heart className="w-3 h-3 text-white fill-white" />
+                      <span className="text-white text-[10px] font-black leading-none">Everyone Liked</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="w-full h-32 bg-gradient-to-t from-rose-900 to-rose-600 rounded-t-xl flex items-center justify-center border-t-4 border-rose-400 relative shadow-[0_0_30px_rgba(244,63,94,0.3)]">
                 <span className="text-5xl font-black text-rose-200">1</span>
@@ -152,6 +169,14 @@ export function ResultsScreen({ movies, scores, superLikes, onReroll, onMovieCli
                   <div className="absolute top-2 left-2 bg-gradient-to-r from-amber-400 to-rose-500 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
                     <Star className="w-3 h-3 text-white fill-white" />
                     <span className="text-white text-[10px] font-black leading-none">Super Liked</span>
+                  </div>
+                )}
+                {unanimous.includes(top3[2].id) && (
+                  <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+                    <div className="bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                      <Heart className="w-3 h-3 text-white fill-white" />
+                      <span className="text-white text-[10px] font-black leading-none">Everyone Liked</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -189,6 +214,14 @@ export function ResultsScreen({ movies, scores, superLikes, onReroll, onMovieCli
                     <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-500/30 rounded-full px-2 py-0.5">
                       <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
                       <span className="text-amber-300 text-[10px] font-bold">Most Super Liked</span>
+                    </div>
+                  </div>
+                )}
+                {unanimous.includes(movie.id) && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 rounded-full px-2 py-0.5">
+                      <Heart className="w-3 h-3 text-emerald-400 fill-emerald-400" />
+                      <span className="text-emerald-300 text-[10px] font-bold">Everyone Liked This</span>
                     </div>
                   </div>
                 )}

@@ -100,12 +100,24 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                 if game_state:
                     game_state.register_swipe(movie_id, liked=True)
                     
-                    # Unanimous match detection during gameplay
-                    if game_state.scores[movie_id] == game_state.total_players:
+                    # Unanimous detection: everyone has now liked this movie
+                    if game_state.likes[movie_id] >= game_state.total_players:
                         await manager.broadcast_to_room(room_code, {
                             "type": "match_found",
                             "movie_id": movie_id
                         })
+
+            elif data["action"] == "swipe_left":
+                movie_id = data["movie_id"]
+                game_state = active_rooms[room_code].get("game_state")
+                if game_state:
+                    game_state.register_swipe(movie_id, liked=False)
+
+            elif data["action"] == "seen_it":
+                movie_id = data["movie_id"]
+                game_state = active_rooms[room_code].get("game_state")
+                if game_state:
+                    game_state.register_seen(movie_id)
 
             elif data["action"] == "super_like":
                 movie_id = data["movie_id"]
@@ -114,8 +126,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                 if game_state:
                     game_state.register_super_like(movie_id)
                     
-                    # Unanimous match detection (super-like counts as a like too)
-                    if game_state.scores[movie_id] >= game_state.total_players * 2:
+                    # Super-like also counts for unanimous detection
+                    if game_state.likes[movie_id] >= game_state.total_players:
                         await manager.broadcast_to_room(room_code, {
                             "type": "match_found",
                             "movie_id": movie_id
@@ -127,13 +139,14 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                 if game_state:
                     game_state.player_finished_deck()
                     
-                    # If this was the last player, game over!
                     if game_state.is_game_over():
                         final = game_state.get_final_results()
                         await manager.broadcast_to_room(room_code, {
                             "type": "game_over",
                             "scores": final["scores"],
                             "super_likes": final["super_likes"],
+                            "seen_counts": final["seen_counts"],
+                            "unanimous": final["unanimous"],
                         })
 
     except WebSocketDisconnect:
@@ -163,4 +176,6 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                     "type": "game_over",
                     "scores": final["scores"],
                     "super_likes": final["super_likes"],
+                    "seen_counts": final["seen_counts"],
+                    "unanimous": final["unanimous"],
                 })

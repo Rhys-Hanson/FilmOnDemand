@@ -8,43 +8,30 @@ import { cn } from '../lib/utils';
 interface SwipeScreenProps {
   movies: Movie[];
   onPlayerFinished: () => void;
-  onSwipeServer: (movieId: string, liked: boolean, isSuperLike?: boolean) => void;
+  onSwipeServer: (movieId: string, voteType: 'like' | 'dislike' | 'super_like' | 'seen_it') => void;
 }
 
 export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [scores, setScores] = useState<Record<string, number>>({});
   const [superLikesLeft, setSuperLikesLeft] = useState(1);
   const [isWaiting, setIsWaiting] = useState(false);
 
   const handleSwipe = (direction: 'left' | 'right' | 'up', movie: Movie) => {
-    let scoreChange = 0;
-    if (direction === 'left') {
-       scoreChange = -1;
-    }
     if (direction === 'right') {
-       scoreChange = 1;
-       onSwipeServer(movie.id, true);
+      onSwipeServer(movie.id, 'like');
+    } else if (direction === 'left') {
+      onSwipeServer(movie.id, 'dislike');
+    } else if (direction === 'up') {
+      onSwipeServer(movie.id, 'seen_it');
     }
-    if (direction === 'up') scoreChange = -2;
-
-    setScores(prev => ({
-      ...prev,
-      [movie.id]: (prev[movie.id] || 0) + scoreChange
-    }));
-
     nextMovie();
   };
 
   const handleSuperLike = () => {
     if (superLikesLeft > 0 && currentIndex < movies.length) {
       const movie = movies[currentIndex];
-      setScores(prev => ({
-        ...prev,
-        [movie.id]: (prev[movie.id] || 0) + 2
-      }));
       setSuperLikesLeft(prev => prev - 1);
-      onSwipeServer(movie.id, true, true);  // isSuperLike = true
+      onSwipeServer(movie.id, 'super_like');
       nextMovie();
     }
   };
