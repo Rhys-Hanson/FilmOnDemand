@@ -15,6 +15,7 @@ interface SearchableChipInputProps {
 export function SearchableChipInput({ placeholder, options, selected, onChange, icon, suggestions }: SearchableChipInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredOptions = query.trim().length > 0
@@ -23,12 +24,25 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
       )
     : [];
 
+  // Close dropdown on click outside the entire component
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleAdd = (option: string) => {
     if (!selected.includes(option)) {
       onChange([...selected, option]);
     }
     setQuery('');
     setIsOpen(false);
+    // Return focus to input so user can keep typing
+    inputRef.current?.focus();
   };
 
   const handleRemove = (option: string) => {
@@ -38,7 +52,7 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
   const availableSuggestions = suggestions?.filter(s => !selected.includes(s)) || [];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" ref={containerRef}>
       <div className="relative">
         <div className={cn(
           "flex items-center bg-neutral-900/60 border rounded-2xl px-4 py-3.5 transition-all backdrop-blur-xl shadow-inner",
@@ -56,10 +70,18 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
             onFocus={() => {
               if (query.trim().length > 0) setIsOpen(true);
             }}
-            onBlur={() => setIsOpen(false)}
+            // No onBlur here — the click-outside handler manages closing cleanly
             placeholder={placeholder}
             className="bg-transparent border-none outline-none text-white w-full placeholder:text-neutral-600 font-medium"
           />
+          {query.length > 0 && (
+            <button
+              onClick={() => { setQuery(''); setIsOpen(false); inputRef.current?.focus(); }}
+              className="ml-2 text-neutral-500 hover:text-white transition-colors shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         <AnimatePresence>
@@ -71,15 +93,12 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
               transition={{ duration: 0.15, ease: "easeOut" }}
               className="absolute top-full left-0 right-0 mt-2 bg-neutral-900/95 backdrop-blur-2xl border border-neutral-800 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-h-56 overflow-y-auto z-[60]"
             >
-              {filteredOptions.map((option, idx) => (
+              {filteredOptions.map((option) => (
                 <button
                   key={option}
-                  // onMouseDown instead of onClick so it fires before the input's onBlur,
-                  // preventing the dropdown from closing before the add registers.
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleAdd(option);
-                  }}
+                  // Use onMouseDown to fire before any potential focus events,
+                  // but now we don't need preventDefault since there's no onBlur race.
+                  onMouseDown={() => handleAdd(option)}
                   className="w-full text-left px-5 py-3.5 text-neutral-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between border-b border-white/5 last:border-0"
                 >
                   <span className="font-medium">{option}</span>
