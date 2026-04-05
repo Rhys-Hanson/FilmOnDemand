@@ -46,9 +46,11 @@ class FilmOnDemand:
 
         self.sources = filters.get("services", [])
         self.genres = filters.get("genres", [])
-        self.actor = filters.get("actor", "")
+        # Frontend sends `actors` as an array (max 1 item); fall back to legacy `actor` string
+        actors_list = filters.get("actors", [])
+        self.actor = actors_list[0] if actors_list else filters.get("actor", "")
         self.year_range = filters.get("yearRange", None)
-        self.similar_movies = filters.get("similarMovies", [])
+        self.similar_movies = filters.get("movies", filters.get("similarMovies", []))
 
         if self.actor:
             self.fetch_type = "actor"
