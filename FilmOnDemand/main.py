@@ -24,7 +24,7 @@ class FilmOnDemand:
         self.actor = ""
         self.similar_movies = []
         
-        self.movie_titles = []
+        self.movies_and_ids = []
         self.movies_with_desc = {}
 
     def settings(self, config):
@@ -61,30 +61,29 @@ class FilmOnDemand:
     def get_movies(self):        
         # From Watchmode API
         if self.fetch_type == "actor":
-            self.movie_titles = self.watchmode.run_for_actors(self.actor,   self.sources)
+            self.movies_and_ids = self.watchmode.run_for_actors(self.actor, self.sources)
             return None
         elif self.fetch_type == "genre":
-            self.movie_titles = self.watchmode.run_for_genres(self.genres, self.sources)
+            self.movies_and_ids = self.watchmode.run_for_genres(self.genres, self.sources)
             return None
         
         # From TasteDive API
         elif self.fetch_type == "similar_movies":
-            self.movie_titles = self.tastedive.run(",".join(self.similar_movies))
+            self.movies_and_ids = self.tastedive.run(",".join(self.similar_movies))
             return None
 
 # Takes the list of movies titles
     def get_movie_info(self):
-        print("\n--- Fetching TMDb Details ---")
-        movie_info = {movie : self.tmdb.movie_info(movie) for movie in self.movie_titles}
+        movie_titles = list(self.movies_and_ids.keys())
+        movie_info = {movie : self.tmdb.movie_info(movie) for movie in movie_titles}
 
         # Fetch Trakt stats for all movies in one batch
-        print("\n--- Fetching Trakt Details ---")
-        trakt_results = self.trakt.rank_movies(self.movie_titles)
+        trakt_results = self.trakt.rank_movies(movie_titles)
 
         # Build a lookup by title so we can match results back
         trakt_lookup = {entry["title"]: entry for entry in trakt_results}
 
-        for movie in self.movie_titles:
+        for movie in movie_titles:
             trakt_data = trakt_lookup.get(movie, {})
             movie_info[movie]["trending_rank"] = trakt_data.get("trending_rank", None)
             movie_info[movie]["watchers"] = trakt_data.get("watchers", 0)

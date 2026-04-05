@@ -62,14 +62,14 @@ class WatchmodeAPI:
 
 
 # takes a list of genres ids and source ids and outputs the json script of the top 10 movies
-    def fetch_movies_by_genre(self, genre_ids, source_ids):
+    def fetch_movies_by_genre(self, genre_ids, source_ids=None):
         params = {
             "apiKey": self.API_KEY,
             "source_ids": ",".join(str(x) for x in source_ids),
             "types": "movie",
             "regions": "CA",
             "sort_by": "popularity_desc",
-            "limit": 10,
+            "limit": 20,
             "genres": ",".join(str(x) for x in genre_ids)
         }
         url = self.base_url + urlencode(params)
@@ -78,14 +78,14 @@ class WatchmodeAPI:
             return json.loads(response.read().decode())
 
 # takes in the actor's id and the source ids and outputs the json script of the top 10 movies 
-    def fetch_movies_by_actor(self, actor_id, source_ids):
+    def fetch_movies_by_actor(self, actor_id, source_ids=None):
         params = {
             "apiKey": self.API_KEY,
             "source_ids": ",".join(str(x) for x in source_ids),
             "types": "movie",
             "regions": "CA",
             "sort_by": "popularity_desc",
-            "limit": 10,
+            "limit": 20,
             "person_id": actor_id
         }
         url = self.base_url + urlencode(params)
@@ -127,11 +127,11 @@ class WatchmodeAPI:
         
         return {"sources": sources}
 
-# take the json file from fetch_movies_by_? and parses the results to put only the movie titles in a list
+# take the json file from fetch_movies_by_? and parses the results and creates a dict of format {titles: tmdb_id}
     def parse_results(self, data): 
-        movies = []
+        movies = {}
         for item in data["titles"]:
-            movies.append(item["title"])
+            movies[item["title"]] = item["tmdb_id"]
         return movies
     
     def run_for_actors(self, actor_name, sources):
