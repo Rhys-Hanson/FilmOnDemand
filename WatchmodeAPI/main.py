@@ -54,11 +54,14 @@ class WatchmodeAPI:
         return ids
 
 # takes an actor name as parameter and returns corresponding Watchmode ID from the .json file data provided by Watchmode.com
-    def get_actor_id(self, actor_name):
-        file_path = Path(__file__).resolve().parent / "person_id_map.json"
-        with open(file_path, "r", encoding="utf-8") as f:
-            person_map = json.load(f)
-        return person_map.get(actor_name.lower().strip())
+    def get_actor_id(self, actor_name=None):
+        if actor_name:
+            file_path = Path(__file__).resolve().parent / "person_id_map.json"
+            with open(file_path, "r", encoding="utf-8") as f:
+                person_map = json.load(f)
+            return person_map.get(actor_name.lower().strip())
+        else:
+            return None
 
 
 # takes a list of genres ids and source ids and outputs the json script of the top 10 movies
@@ -109,13 +112,14 @@ class WatchmodeAPI:
 
         exact_match = [
             movie for movie in data.get("title_results", [])
-            if movie.get("name", "").lower() == movie_input
+            if movie.get("name", "").lower() == movie_input.lower()
             and movie.get("type") == "movie"
         ]
         if not exact_match:
             return None
 
         title_id = exact_match[0]["id"] 
+        tmdb_id = exact_match[0]["tmdb_id"]
         
         url = f'https://api.watchmode.com/v1/title/{title_id}/details/?apiKey={self.API_KEY}&append_to_response=sources&regions=CA'
 
@@ -123,9 +127,8 @@ class WatchmodeAPI:
             data = json.loads(response.read().decode())
 
         sources = data.get("sources", [])
-        sources = [source["source_id"] for source in sources if source["type"] == "sub"]
-        
-        return {"sources": sources}
+        sources = [source["source_id"] for source in sources]
+        return {"tmdb_id": tmdb_id, "sources": sources}
 
 # take the json file from fetch_movies_by_? and parses the results and creates a dict of format {titles: tmdb_id}
     def parse_results(self, data): 

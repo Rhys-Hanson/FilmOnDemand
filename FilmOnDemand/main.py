@@ -24,7 +24,7 @@ class FilmOnDemand:
         self.actor = ""
         self.similar_movies = []
         
-        self.movies_and_ids = []
+        self.movies_and_ids = {}
         self.movies_with_desc = {}
 
     def settings(self, config):
@@ -52,10 +52,11 @@ class FilmOnDemand:
 
         if self.actor:
             self.fetch_type = "actor"
-        elif self.genres:
-            self.fetch_type = "genre"
         elif self.similar_movies:
             self.fetch_type = "similar_movies"
+        else:
+            self.fetch_type = "genre"
+        
 
 # Returns a list of the top 10 most relavent movies to the settings
     def get_movies(self):        
@@ -69,7 +70,19 @@ class FilmOnDemand:
         
         # From TasteDive API
         elif self.fetch_type == "similar_movies":
-            self.movies_and_ids = self.tastedive.run(",".join(self.similar_movies))
+            movie_recs = self.tastedive.run(",".join(self.similar_movies))
+            temp_dict = {}
+            for movie in movie_recs:
+                id_and_sources_dict = self.watchmode.get_watchmode_movie_info(movie)
+                tmdb_id = id_and_sources_dict["tmdb_id"]
+                if self.sources:
+                    for source in id_and_sources_dict["sources"]:
+                        if source in self.watchmode.get_source_ids(self.sources):
+                            temp_dict[movie] = tmdb_id
+                            break
+                else: 
+                    temp_dict[movie] = tmdb_id
+            self.movies_and_ids = temp_dict
             return None
 
 # Takes the list of movies titles
@@ -116,9 +129,9 @@ if __name__ == "__main__":
     settings = json.dumps({
             "action": "start_game",
             "filters": {
-                "genres": ["Horror", "Action"],
-                "services": ["Netflix"],
-                "actor": None,
+                "genres": ["Romance", "Action"],
+                "services": ["Netflix","Prime Video"],
+                "actor": "",
                 "yearRange": [1990, 2024],
                 "similarMovies": []
             }
