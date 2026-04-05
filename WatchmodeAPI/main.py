@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from pathlib import Path 
 import json
 
+
 class WatchmodeAPI:
 
 # creates an object of the class
@@ -15,7 +16,8 @@ class WatchmodeAPI:
         self.genre_data = genre_data
         self.source_data = source_data
         
-        load_dotenv()
+        ROOT_DIR = Path(__file__).resolve().parent.parent
+        load_dotenv(ROOT_DIR / ".env")
 
         self.API_KEY = os.getenv("WATCHMODE_API_KEY")
         if not self.API_KEY:
