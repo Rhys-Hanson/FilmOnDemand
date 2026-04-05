@@ -5,6 +5,7 @@ import random
 import string
 from .room_manager import RoomManager
 from .mock_data import MOCK_MOVIES
+from .game_state import GameState
 import json
 
 USE_MOCK_DATA = True
@@ -80,17 +81,39 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                     engine = FilmOnDemand()
                     deck = engine.run_movie_pull(json.dumps(data))
                     
+                # Create the game state to formally track progression
+                player_count = len(manager.rooms[room_code])
+                active_rooms[room_code]["game_state"] = GameState(room_code, player_count)
+                    
                 await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": deck})
                 
             elif data["action"] == "swipe_right":
                 movie_id = data["movie_id"]
-                active_rooms[room_code]["scores"][movie_id] = active_rooms[room_code]["scores"].get(movie_id, 0) + 1
+                game_state = active_rooms[room_code].get("game_state")
                 
-                if active_rooms[room_code]["scores"][movie_id] == len(manager.rooms[room_code]):
-                    await manager.broadcast_to_room(room_code, {
-                        "type": "match_found",
-                        "movie_id": movie_id
-                    })
+                if game_state:
+                    game_state.register_swipe(movie_id, liked=True)
+                    
+                    # Unanimous match detection during gameplay
+                    if game_state.scores[movie_id] == game_state.total_players:
+                        await manager.broadcast_to_room(room_code, {
+                            "type": "match_found",
+                            "movie_id": movie_id
+                        })
+                        
+            elif data["action"] == "player_finished":
+                game_state = active_rooms[room_code].get("game_state")
+                
+                if game_state:
+                    game_state.player_finished_deck()
+                    
+                    # If this was the last player, game over!
+                    if game_state.is_game_over():
+                        final_scores = game_state.get_final_results()
+                        await manager.broadcast_to_room(room_code, {
+                            "type": "game_over",
+                            "scores": final_scores
+                        })
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_code)
