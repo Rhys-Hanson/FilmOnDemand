@@ -1,11 +1,13 @@
 import os
 import requests
+from pathlib import Path 
 from dotenv import load_dotenv
 
 
 class TasteDiveAPI:
     def __init__(self):
-        load_dotenv()
+        ROOT_DIR = Path(__file__).resolve().parent.parent
+        load_dotenv(ROOT_DIR / ".env")
         self.api_key = os.getenv("TASTEDIVE_API_KEY")
         self.base_url = "https://tastedive.com/api/similar"
 

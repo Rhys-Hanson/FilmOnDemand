@@ -2,10 +2,13 @@ import requests
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from pathlib import Path 
 
 
 class TraktAPI:
-    load_dotenv()
+    
+    ROOT_DIR = Path(__file__).resolve().parent.parent
+    load_dotenv(ROOT_DIR / ".env")
     
     API_KEY = os.getenv("TRAKT_API_KEY")
     base_url = "https://api.trakt.tv"
