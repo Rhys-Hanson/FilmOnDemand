@@ -186,29 +186,6 @@ export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeSc
           Already seen it
         </button>
       </div>
-
-      {/* Keyboard hint */}
-      <div className="flex justify-center items-center gap-3 mt-4 z-10 pb-4 hidden md:flex">
-        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
-          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">←</kbd>
-          Nope
-        </span>
-        <span className="text-neutral-700 text-[10px]">·</span>
-        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
-          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">→</kbd>
-          Like
-        </span>
-        <span className="text-neutral-700 text-[10px]">·</span>
-        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
-          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">↑</kbd>
-          Seen it
-        </span>
-        <span className="text-neutral-700 text-[10px]">·</span>
-        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
-          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">space</kbd>
-          Super ⭐
-        </span>
-      </div>
     </div>
   );
 }
