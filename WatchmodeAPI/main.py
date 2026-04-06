@@ -38,8 +38,8 @@ class WatchmodeAPI:
         
         for name in genres:
             name = name.lower().strip()
-        if name in temp_dict:
-            ids.append(temp_dict[name])
+            if name in temp_dict:
+                ids.append(temp_dict[name])
         
         return ids
 
@@ -52,8 +52,8 @@ class WatchmodeAPI:
         
         for name in sources:
             name = name.lower().strip()
-        if name in temp_dict:
-            ids.append(temp_dict[name])
+            if name in temp_dict:
+                ids.append(temp_dict[name])
         
         return ids
 
@@ -146,7 +146,6 @@ class WatchmodeAPI:
         actor_id = self.get_actor_id(actor_name.lower().strip())
 
         if actor_id is None:
-            print("Actor not found.")
             return []
 
         data = self.fetch_movies_by_actor(actor_id, source_ids)
