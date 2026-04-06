@@ -1,8 +1,18 @@
 # Film On Demand: Full Implementation Plan
 
-## 1. Executive Summary
-**Objective:** Transform the current API wrapper/UI prototype into a full-scale, deployed web application. 
-**Core Concept:** A party-game style movie recommendation platform. Users join a "room" via a code (like Kahoot), select their filters, and swipe left/right on movies (like Tinder). When everyone matches on a movie, the group has their winner.
+## Quick Task Tracker
+
+| Phase | Component | Assigned To | Status |
+|---|---|---|---|
+| **Phase 1: Database APIs** | Refactor `TMDbAPI` to return JSON dicts with `posterUrl` / `castList` | Back-End Team | 🟢 Complete |
+| **Phase 1: Database APIs** | Refactor `WatchmodeAPI` to return movie lists by genre/actor | Back-End Team | 🟢 Complete |
+| **Phase 1: Database APIs** | Refactor `TasteDiveAPI` to return similar movie title lists | Back-End Team | 🟢 Complete |
+| **Phase 1: Database APIs** | Update `FilmOnDemand/main.py` to return a list of movie dicts (not print) | Front-End Team | 🟢 Complete |
+| **Phase 2: Game Engine** | Scaffold FastAPI server and Basic Room Manager | Front-End Team | 🟢 Complete |
+| **Phase 2: Game Engine** | Implement `GameState` score caching (`server/game_state.py`) | Front-End Team | 🟢 Complete |
+| **Phase 2: Game Engine** | Hook live filter logic to `start_game` WebSocket event (toggle via `USE_MOCK_DATA`) | Front-End Team | 🟢 Complete |
+| **Phase 3: React Frontend** | `react-use-websocket` integration & dynamic architecture | Front-End Team | 🟢 Complete |
+| **Phase 3: React Frontend** | Dynamic Local Network Wi-Fi routing & QR scanning | Front-End Team | 🟢 Complete |
 
 **Current State:**
 - The React frontend prototype looks great but runs entirely on local, hard-coded mock data.

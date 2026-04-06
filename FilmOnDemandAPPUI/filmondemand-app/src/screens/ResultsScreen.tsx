@@ -2,23 +2,32 @@ import React, { useEffect } from 'react';
 import { motion } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { Movie } from '../data/movies';
-import { RotateCcw, Trophy, Star } from 'lucide-react';
+import { RotateCcw, Trophy, Star, Heart } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface ResultsScreenProps {
   movies: Movie[];
   scores: Record<string, number>;
+  superLikes: Record<string, number>;
+  unanimous: string[];
   onReroll: () => void;
   onMovieClick: (movie: Movie) => void;
 }
 
-export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: ResultsScreenProps) {
+export function ResultsScreen({ movies, scores, superLikes, unanimous, onReroll, onMovieClick }: ResultsScreenProps) {
   // Sort movies by score descending
   const sortedMovies = [...movies].sort((a, b) => {
     const scoreA = scores[a.id] || 0;
     const scoreB = scores[b.id] || 0;
     return scoreB - scoreA;
   });
+
+  // Find the movie with the most super likes (if any were cast)
+  const mostSuperLikedId = Object.keys(superLikes).length > 0
+    ? Object.entries(superLikes).reduce((best, [id, count]) =>
+        count > (superLikes[best] || 0) ? id : best
+      , Object.keys(superLikes)[0])
+    : null;
 
   const top3 = sortedMovies.slice(0, 3);
   const others = sortedMovies.slice(3, 10);
@@ -72,6 +81,22 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
               className="flex flex-col items-center w-1/3 cursor-pointer group"
               onClick={() => onMovieClick(top3[1])}
             >
+              {/* Badge Area Above Poster */}
+              <div className="flex flex-col items-center gap-1 mb-2 min-h-[32px] justify-end">
+                {mostSuperLikedId === top3[1].id && (
+                  <div className="bg-gradient-to-r from-amber-400 to-rose-500 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Star className="w-2.5 h-2.5 text-white fill-white" />
+                    <span className="text-white text-[9px] font-black uppercase tracking-tighter">Super Liked</span>
+                  </div>
+                )}
+                {unanimous.includes(top3[1].id) && (
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Heart className="w-2.5 h-2.5 text-white fill-white" />
+                    <span className="text-white text-[9px] font-black uppercase tracking-tighter">Everyone Liked</span>
+                  </div>
+                )}
+              </div>
+
               <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden mb-4 shadow-lg shadow-neutral-900 group-hover:ring-2 group-hover:ring-white/50 transition-all">
                 <img src={top3[1].posterUrl} alt={top3[1].title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-2">
@@ -96,12 +121,28 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
               className="flex flex-col items-center w-1/3 z-10 cursor-pointer group"
               onClick={() => onMovieClick(top3[0])}
             >
+              {/* Badge Area Above Poster */}
+              <div className="flex flex-col items-center gap-1 mb-2 min-h-[44px] justify-end relative w-full">
+                {mostSuperLikedId === top3[0].id && (
+                  <div className="bg-gradient-to-r from-amber-400 to-rose-500 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Star className="w-3 h-3 text-white fill-white" />
+                    <span className="text-white text-[10px] font-black uppercase tracking-tighter">Super Liked</span>
+                  </div>
+                )}
+                {unanimous.includes(top3[0].id) && (
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Heart className="w-3 h-3 text-white fill-white" />
+                    <span className="text-white text-[10px] font-black uppercase tracking-tighter">Everyone Liked</span>
+                  </div>
+                )}
+              </div>
+
               <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden mb-4 shadow-2xl shadow-rose-500/20 ring-4 ring-rose-500 group-hover:ring-rose-400 transition-all">
                 <img src={top3[0].posterUrl} alt={top3[0].title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-2">
                   <span className="text-white font-bold text-sm text-center px-1 leading-tight">{top3[0].title}</span>
                 </div>
-                <div className="absolute top-2 right-2 bg-rose-500 rounded-full p-1 shadow-lg">
+                <div className="absolute top-2 right-2 bg-rose-500 rounded-full p-1.5 shadow-lg shadow-rose-950/50 ring-2 ring-rose-400/50">
                   <Trophy className="w-4 h-4 text-white" />
                 </div>
               </div>
@@ -123,6 +164,22 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
               className="flex flex-col items-center w-1/3 cursor-pointer group"
               onClick={() => onMovieClick(top3[2])}
             >
+              {/* Badge Area Above Poster */}
+              <div className="flex flex-col items-center gap-1 mb-2 min-h-[32px] justify-end">
+                {mostSuperLikedId === top3[2].id && (
+                  <div className="bg-gradient-to-r from-amber-400 to-rose-500 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Star className="w-2.5 h-2.5 text-white fill-white" />
+                    <span className="text-white text-[9px] font-black uppercase tracking-tighter">Super Liked</span>
+                  </div>
+                )}
+                {unanimous.includes(top3[2].id) && (
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full px-2 py-0.5 flex items-center gap-1 shadow-lg">
+                    <Heart className="w-2.5 h-2.5 text-white fill-white" />
+                    <span className="text-white text-[9px] font-black uppercase tracking-tighter">Everyone Liked</span>
+                  </div>
+                )}
+              </div>
+
               <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden mb-4 shadow-lg shadow-neutral-900 group-hover:ring-2 group-hover:ring-white/50 transition-all">
                 <img src={top3[2].posterUrl} alt={top3[2].title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-2">
@@ -158,6 +215,22 @@ export function ResultsScreen({ movies, scores, onReroll, onMovieClick }: Result
               <div className="flex-1">
                 <h4 className="text-white font-medium line-clamp-1">{movie.title}</h4>
                 <p className="text-neutral-400 text-sm">{movie.year}</p>
+                {mostSuperLikedId === movie.id && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-rose-500/20 border border-amber-500/30 rounded-full px-2 py-0.5">
+                      <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                      <span className="text-amber-300 text-[10px] font-bold">Most Super Liked</span>
+                    </div>
+                  </div>
+                )}
+                {unanimous.includes(movie.id) && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 rounded-full px-2 py-0.5">
+                      <Heart className="w-3 h-3 text-emerald-400 fill-emerald-400" />
+                      <span className="text-emerald-300 text-[10px] font-bold">Everyone Liked This</span>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="bg-neutral-800 px-3 py-1 rounded-full text-sm font-medium text-neutral-300">
                 {scores[movie.id] || 0} pts

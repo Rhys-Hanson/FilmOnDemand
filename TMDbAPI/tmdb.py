@@ -1,10 +1,12 @@
 from tmdb3 import searchMovie, set_key, set_cache, Movie #import the python wrapper for the TMDb API
 import os
 from dotenv import load_dotenv
+from pathlib import Path 
 
 class TMDbAPI:
     def __init__(self):
-        load_dotenv()
+        ROOT_DIR = Path(__file__).resolve().parent.parent
+        load_dotenv(ROOT_DIR / ".env")
         
         self.API_KEY = os.getenv("TMDb_API_KEY")
         
