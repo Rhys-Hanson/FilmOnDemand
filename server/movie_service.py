@@ -49,8 +49,16 @@ def normalize_movie_payload(filters: dict[str, Any], raw_movies: list[dict[str, 
         cast_list = movie.get("castList") or []
         cast_names = [person.get("name", "") for person in cast_list if person.get("name")]
 
-        trakt_rating = movie.get("trakt_rating")
-        imdb_score = trakt_rating if isinstance(trakt_rating, (int, float)) else 0
+        # Prefer real OMDb/IMDb score over the Trakt mislabel
+        imdb_score = movie.get("imdbScore") or movie.get("imdb_rating") or 0
+        if not isinstance(imdb_score, (int, float)):
+            try:
+                imdb_score = float(imdb_score)
+            except (TypeError, ValueError):
+                imdb_score = 0
+
+        rt_score = movie.get("rtScore") or movie.get("rt_score") or 0
+        metacritic_score = movie.get("metacriticScore") or movie.get("metascore") or 0
 
         normalized_movies.append(
             {
@@ -60,9 +68,10 @@ def normalize_movie_payload(filters: dict[str, Any], raw_movies: list[dict[str, 
                 "description": movie.get("description") or "No description available.",
                 "cast": cast_names,
                 "castList": cast_list,
-                "rtScore": 0,
+                "rtScore": rt_score,
                 "imdbScore": imdb_score,
-                "metacriticScore": 0,
+                "metacriticScore": metacritic_score,
+                "imdbVotes": movie.get("imdbVotes") or movie.get("imdb_votes") or None,
                 "summary": movie.get("description") or "No summary available.",
                 "genre": movie.get("genres") or [],
                 "year": movie.get("year"),
@@ -70,6 +79,13 @@ def normalize_movie_payload(filters: dict[str, Any], raw_movies: list[dict[str, 
                 "maturityRating": movie.get("maturityRating") or "Unrated",
                 "runtime": movie.get("runtime") or "Unknown",
                 "streamingServices": requested_services,
+                # OMDb enrichment fields
+                "director": movie.get("director") or None,
+                "writer": movie.get("writer") or None,
+                "language": movie.get("language") or None,
+                "country": movie.get("country") or None,
+                "awards": movie.get("awards") or None,
+                "boxOffice": movie.get("boxOffice") or movie.get("box_office") or None,
             }
         )
 

@@ -14,6 +14,7 @@ export interface Movie {
   rtScore: number;
   imdbScore: number;
   metacriticScore: number;
+  imdbVotes?: string;
   summary: string;
   genre: string[];
   year: number;
@@ -21,6 +22,13 @@ export interface Movie {
   maturityRating: string;
   runtime: string;
   streamingServices?: string[];
+  // OMDb enrichment fields
+  director?: string;
+  writer?: string;
+  language?: string;
+  country?: string;
+  awards?: string;
+  boxOffice?: string;
 }
 
 export const MOVIE_DATA: Movie[] = [
@@ -38,6 +46,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 93,
     imdbScore: 8.8,
+    imdbVotes: "564,521",
     metacriticScore: 79,
     summary: "A visually stunning sci-fi epic that expands the universe of Arrakis.",
     genre: ["Sci-Fi", "Adventure", "Action"],
@@ -45,7 +54,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "Way9Dexny3w",
     maturityRating: "PG-13",
     runtime: "2h 46m",
-    streamingServices: ["Max", "Apple TV+"]
+    streamingServices: ["Max", "Apple TV+"],
+    director: "Denis Villeneuve",
+    writer: "Denis Villeneuve, Jon Spaihts",
+    language: "English, Mandarin",
+    country: "United States, Canada",
+    awards: "Nominated for 5 Oscars. 68 wins & 252 nominations.",
+    boxOffice: "$282,143,250"
   },
   {
     id: "m2",
@@ -61,6 +76,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 93,
     imdbScore: 8.4,
+    imdbVotes: "812,004",
     metacriticScore: 88,
     summary: "A gripping historical drama exploring the moral complexities of the atomic age.",
     genre: ["Biography", "Drama", "History"],
@@ -68,7 +84,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "uYPbbksJxIg",
     maturityRating: "R",
     runtime: "3h 0m",
-    streamingServices: ["Peacock", "Prime Video"]
+    streamingServices: ["Peacock", "Prime Video"],
+    director: "Christopher Nolan",
+    writer: "Christopher Nolan, Kai Bird, Martin Sherwin",
+    language: "English, German, Italian",
+    country: "United Kingdom, United States",
+    awards: "Won 7 Oscars. 338 wins & 497 nominations.",
+    boxOffice: "$326,704,375"
   },
   {
     id: "m3",
@@ -83,6 +105,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 95,
     imdbScore: 8.6,
+    imdbVotes: "430,217",
     metacriticScore: 86,
     summary: "An animated masterpiece that pushes the boundaries of visual storytelling.",
     genre: ["Animation", "Action", "Adventure"],
@@ -90,7 +113,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "shW9i6k8cB0",
     maturityRating: "PG",
     runtime: "2h 20m",
-    streamingServices: ["Netflix"]
+    streamingServices: ["Netflix"],
+    director: "Joaquim Dos Santos, Kemp Powers, Justin K. Thompson",
+    writer: "Dave Callaham, Phil Lord, Christopher Miller",
+    language: "English, Spanish",
+    country: "United States",
+    awards: "Won 1 Oscar. 97 wins & 150 nominations.",
+    boxOffice: "$381,311,202"
   },
   {
     id: "m4",
@@ -105,6 +134,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 85,
     imdbScore: 7.8,
+    imdbVotes: "629,551",
     metacriticScore: 72,
     summary: "A dark, gritty, and detective-focused take on the Caped Crusader.",
     genre: ["Action", "Crime", "Drama"],
@@ -112,7 +142,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "mqqft2x_Aa4",
     maturityRating: "PG-13",
     runtime: "2h 56m",
-    streamingServices: ["Max"]
+    streamingServices: ["Max"],
+    director: "Matt Reeves",
+    writer: "Matt Reeves, Peter Craig",
+    language: "English",
+    country: "United States",
+    awards: "Nominated for 3 Oscars. 34 wins & 166 nominations.",
+    boxOffice: "$369,345,583"
   },
   {
     id: "m5",
@@ -127,6 +163,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 94,
     imdbScore: 7.8,
+    imdbVotes: "534,018",
     metacriticScore: 81,
     summary: "A chaotic, heartfelt, and wildly inventive multiverse journey.",
     genre: ["Action", "Adventure", "Comedy"],
@@ -134,7 +171,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "wxN1T1uxQ2g",
     maturityRating: "R",
     runtime: "2h 19m",
-    streamingServices: ["Prime Video", "Paramount+"]
+    streamingServices: ["Prime Video", "Paramount+"],
+    director: "Daniel Kwan, Daniel Scheinert",
+    writer: "Daniel Kwan, Daniel Scheinert",
+    language: "English, Mandarin, Cantonese",
+    country: "United States",
+    awards: "Won 7 Oscars. 277 wins & 302 nominations.",
+    boxOffice: "$69,891,648"
   },
   {
     id: "m6",
@@ -149,6 +192,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 96,
     imdbScore: 8.3,
+    imdbVotes: "416,052",
     metacriticScore: 78,
     summary: "A high-octane legacy sequel that delivers incredible aerial action.",
     genre: ["Action", "Drama"],
@@ -156,7 +200,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "giXco2jaZ_4",
     maturityRating: "PG-13",
     runtime: "2h 10m",
-    streamingServices: ["Paramount+", "Prime Video"]
+    streamingServices: ["Paramount+", "Prime Video"],
+    director: "Joseph Kosinski",
+    writer: "Ehren Kruger, Eric Warren Singer, Christopher McQuarrie",
+    language: "English",
+    country: "United States",
+    awards: "Won 1 Oscar. 58 wins & 183 nominations.",
+    boxOffice: "$718,732,821"
   },
   {
     id: "m7",
@@ -171,6 +221,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 97,
     imdbScore: 7.9,
+    imdbVotes: "497,229",
     metacriticScore: 82,
     summary: "A sharp, witty, and thoroughly entertaining modern whodunit.",
     genre: ["Comedy", "Crime", "Drama"],
@@ -178,7 +229,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "qGqiHJTsRkQ",
     maturityRating: "PG-13",
     runtime: "2h 10m",
-    streamingServices: ["Netflix"]
+    streamingServices: ["Netflix"],
+    director: "Rian Johnson",
+    writer: "Rian Johnson",
+    language: "English",
+    country: "United States",
+    awards: "Nominated for 1 Oscar. 42 wins & 161 nominations.",
+    boxOffice: "$165,363,234"
   },
   {
     id: "m8",
@@ -193,6 +250,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 99,
     imdbScore: 8.5,
+    imdbVotes: "857,021",
     metacriticScore: 96,
     summary: "A masterful, genre-bending thriller about class struggle.",
     genre: ["Drama", "Thriller", "Comedy"],
@@ -200,7 +258,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "5xH0HfJHsaY",
     maturityRating: "R",
     runtime: "2h 12m",
-    streamingServices: ["Max", "Hulu"]
+    streamingServices: ["Max", "Hulu"],
+    director: "Bong Joon-ho",
+    writer: "Bong Joon-ho, Han Jin-won",
+    language: "Korean, English",
+    country: "South Korea",
+    awards: "Won 4 Oscars. 296 wins & 272 nominations.",
+    boxOffice: "$53,367,844"
   },
   {
     id: "m9",
@@ -215,6 +279,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 97,
     imdbScore: 8.1,
+    imdbVotes: "1,078,033",
     metacriticScore: 90,
     summary: "A relentless, visually spectacular action masterpiece.",
     genre: ["Action", "Adventure", "Sci-Fi"],
@@ -222,7 +287,13 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "hEJnMQG9ev8",
     maturityRating: "R",
     runtime: "2h 0m",
-    streamingServices: ["Max"]
+    streamingServices: ["Max"],
+    director: "George Miller",
+    writer: "George Miller, Brendan McCarthy, Nick Lathouris",
+    language: "English",
+    country: "Australia, United States",
+    awards: "Won 6 Oscars. 285 wins & 261 nominations.",
+    boxOffice: "$153,636,354"
   },
   {
     id: "m10",
@@ -237,6 +308,7 @@ export const MOVIE_DATA: Movie[] = [
     ],
     rtScore: 87,
     imdbScore: 8.8,
+    imdbVotes: "2,452,073",
     metacriticScore: 74,
     summary: "A mind-bending sci-fi heist film that explores the architecture of dreams.",
     genre: ["Action", "Adventure", "Sci-Fi"],
@@ -244,6 +316,12 @@ export const MOVIE_DATA: Movie[] = [
     youtubeId: "YoHD9XEInc0",
     maturityRating: "PG-13",
     runtime: "2h 28m",
-    streamingServices: ["Hulu", "Prime Video"]
+    streamingServices: ["Hulu", "Prime Video"],
+    director: "Christopher Nolan",
+    writer: "Christopher Nolan",
+    language: "English, Japanese, French",
+    country: "United States, United Kingdom",
+    awards: "Won 4 Oscars. 160 wins & 220 nominations.",
+    boxOffice: "$292,587,330"
   }
 ];

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, PanInfo } from 'motion/react';
 import { Movie } from '../data/movies';
-import { ArrowLeft, Star, Clock, Calendar, Film } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Film, Trophy, DollarSign, Clapperboard, PenLine } from 'lucide-react';
 
 interface MovieDetailOverlayProps {
   movie: Movie;
@@ -96,26 +96,30 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
           </div>
 
           {/* The Hook (Ratings) */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
+            {/* IMDb */}
             <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-              <div className="flex items-center gap-1.5 text-rose-500 mb-1">
+              <span className="font-black tracking-tighter text-base text-yellow-400 leading-none mb-1">IMDb</span>
+              <span className="text-xl font-bold text-white">{movie.imdbScore}</span>
+              {movie.imdbVotes && (
+                <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">{movie.imdbVotes} votes</span>
+              )}
+            </div>
+            {/* Rotten Tomatoes */}
+            <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
+              <div className="mb-1">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Rotten_Tomatoes.svg/100px-Rotten_Tomatoes.svg.png" alt="RT" className="w-5 h-5 object-contain" />
               </div>
-              <span className="text-xl font-bold text-white">{movie.rtScore}%</span>
+              <span className="text-xl font-bold text-white">{movie.rtScore > 0 ? `${movie.rtScore}%` : 'N/A'}</span>
+              <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">Tomatometer</span>
             </div>
+            {/* Metacritic */}
             <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-              <div className="flex items-center gap-1.5 text-yellow-500 mb-1">
-                <span className="font-black tracking-tighter text-lg leading-none">IMDb</span>
+              <div className="w-5 h-5 bg-emerald-500 flex items-center justify-center rounded-sm mb-1">
+                <span className="text-white text-[10px] font-black leading-none">M</span>
               </div>
-              <span className="text-xl font-bold text-white">{movie.imdbScore}</span>
-            </div>
-            <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-              <div className="flex items-center gap-1.5 mb-1">
-                <div className="w-5 h-5 bg-emerald-500 flex items-center justify-center rounded-sm">
-                  <span className="text-white text-[10px] font-black leading-none">M</span>
-                </div>
-              </div>
-              <span className="text-xl font-bold text-white">{movie.metacriticScore}</span>
+              <span className="text-xl font-bold text-white">{movie.metacriticScore > 0 ? movie.metacriticScore : 'N/A'}</span>
+              <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">Metascore</span>
             </div>
           </div>
 
@@ -144,6 +148,57 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
               {movie.description}
             </p>
           </div>
+
+          {/* Filmmakers (Director / Writer) */}
+          {(movie.director || movie.writer) && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Clapperboard className="w-5 h-5 text-violet-400" />
+                Filmmakers
+              </h3>
+              <div className="space-y-2">
+                {movie.director && (
+                  <div className="flex items-start gap-3">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider w-16 pt-0.5 shrink-0">Director</span>
+                    <span className="text-sm text-neutral-200 leading-snug">{movie.director}</span>
+                  </div>
+                )}
+                {movie.writer && (
+                  <div className="flex items-start gap-3">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider w-16 pt-0.5 shrink-0">Writer</span>
+                    <span className="text-sm text-neutral-200 leading-snug">{movie.writer}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Awards & Box Office */}
+          {(movie.awards || movie.boxOffice) && (
+            <div className="space-y-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-400" />
+                Awards & Box Office
+              </h3>
+              <div className="space-y-2">
+                {movie.awards && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <Trophy className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
+                    <span className="text-sm text-amber-100 leading-snug">{movie.awards}</span>
+                  </div>
+                )}
+                {movie.boxOffice && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                    <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div>
+                      <span className="text-xs text-neutral-400 font-medium">Box Office</span>
+                      <p className="text-sm font-bold text-emerald-300">{movie.boxOffice}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* The Talent (Cast Section) */}
           <div className="space-y-4">
