@@ -1,6 +1,7 @@
 import sys
 import os
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 # Add the parent directory to Python's path so we can import the sibling folders
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -72,12 +73,15 @@ class FilmOnDemand:
         elif self.fetch_type == "similar_movies":
             movie_recs = self.tastedive.run(",".join(self.similar_movies))
             temp_dict = {}
+            selected_source_ids = set(self.watchmode.get_source_ids(self.sources)) if self.sources else None
             for movie in movie_recs:
                 id_and_sources_dict = self.watchmode.get_watchmode_movie_info(movie)
+                if not id_and_sources_dict:
+                    continue
                 tmdb_id = id_and_sources_dict["tmdb_id"]
-                if self.sources:
+                if selected_source_ids is not None:
                     for source in id_and_sources_dict["sources"]:
-                        if source in self.watchmode.get_source_ids(self.sources):
+                        if source in selected_source_ids:
                             temp_dict[movie] = tmdb_id
                             break
                 else: 
@@ -88,14 +92,19 @@ class FilmOnDemand:
 # Takes the list of movies titles
     def get_movie_info(self):
         print("\n--- Fetching TMDb Details ---")
-        movie_titles = list(self.movies_and_ids.keys())
-        movie_info_list = []
-        
-        for movie in movie_titles:
+        movie_titles = list(self.movies_and_ids.keys())[:10]
+
+        def fetch_tmdb_info(movie):
             info = self.tmdb.movie_info(movie)
             info["id"] = str(self.movies_and_ids.get(movie) or movie)
             info["title"] = movie # Ensure title is always present
-            movie_info_list.append(info)
+            return info
+
+        if movie_titles:
+            with ThreadPoolExecutor(max_workers=min(8, len(movie_titles))) as executor:
+                movie_info_list = list(executor.map(fetch_tmdb_info, movie_titles))
+        else:
+            movie_info_list = []
 
         # Fetch Trakt stats for all movies in one batch
         print("\n--- Fetching Trakt Details ---")
@@ -116,7 +125,7 @@ class FilmOnDemand:
             movie_dict["trakt_rating"] = trakt_data.get("trakt_rating", "N/A")
             movie_dict["rating_votes"] = trakt_data.get("rating_votes", "N/A")
         
-        self.movies_with_desc = movie_info_list[:10]
+        self.movies_with_desc = movie_info_list
         return None
     
     def run_movie_pull(self, settings):
