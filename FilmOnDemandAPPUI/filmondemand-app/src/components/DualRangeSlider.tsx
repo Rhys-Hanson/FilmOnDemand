@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { motion } from 'motion/react';
 
 interface DualRangeSliderProps {
@@ -25,7 +25,7 @@ export function DualRangeSlider({ min, max, value, onChange }: DualRangeSliderPr
     }
   }, [value]);
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, thumb: 'left' | 'right') => {
+  const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>, thumb: 'left' | 'right') => {
     e.stopPropagation();
     e.preventDefault(); // prevent selection
     isDragging.current = thumb;
@@ -91,7 +91,7 @@ export function DualRangeSlider({ min, max, value, onChange }: DualRangeSliderPr
     onChange([localValue[0], parsed]);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.currentTarget.blur();
     }
