@@ -6,8 +6,7 @@ import requests
 @pytest.fixture
 def api():
     """Fixture to initialize the TasteDiveAPI with a mocked environment."""
-    with patch('TasteDiveAPI.main.load_dotenv'), \
-         patch('os.getenv') as mock_getenv:
+    with patch('TasteDiveAPI.main.load_dotenv'), patch('os.getenv') as mock_getenv:
         mock_getenv.return_value = "fake_api_key"
         return TasteDiveAPI()
 

@@ -6,7 +6,7 @@ def searchMovie(title_obj):
 
 #Code being tested
 class MovieInfo:
- def movie_info(self, title):
+    def movie_info(self, title):
         possibleMovies = searchMovie (title) #searches for the movie title and returns a list of movies with similar titles
 
         if len(possibleMovies) == 0:
