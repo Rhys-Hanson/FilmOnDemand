@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { QrCode, Play, Plus, Clapperboard } from 'lucide-react';
+import { QrCode, Play, Plus, Clapperboard, Info } from 'lucide-react';
 
 interface EntryScreenProps {
   onJoin: (code: string) => void;
@@ -10,6 +10,21 @@ interface EntryScreenProps {
 export function EntryScreen({ onJoin, onCreate }: EntryScreenProps) {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const qrInputRef = useRef<HTMLInputElement | null>(null);
+  const [showQrToast, setShowQrToast] = useState(false);
+
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+  const handleScanQr = () => {
+    if (isMobile) {
+      // On mobile, trigger the hidden file input which opens the native camera
+      qrInputRef.current?.click();
+    } else {
+      // On desktop, show a helpful hint
+      setShowQrToast(true);
+      setTimeout(() => setShowQrToast(false), 3500);
+    }
+  };
 
   const fullCode = code.join('');
 
@@ -126,13 +141,41 @@ export function EntryScreen({ onJoin, onCreate }: EntryScreenProps) {
             )}
           </AnimatePresence>
 
+          {/* Hidden camera input — triggers native QR scanner on mobile */}
+          <input
+            ref={qrInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            // Reading the QR image is handled by the OS camera app itself;
+            // it will parse the URL and open the browser to /join/:code directly.
+            onChange={() => {}}
+          />
+
           <button
             type="button"
-            className="w-full bg-neutral-900/40 border border-neutral-800/80 text-white font-semibold rounded-[20px] py-4 flex items-center justify-center gap-2 hover:bg-neutral-800/60 transition-colors backdrop-blur-md mt-4"
+            onClick={handleScanQr}
+            className="w-full bg-neutral-900/40 border border-neutral-800/80 text-white font-semibold rounded-[20px] py-4 flex items-center justify-center gap-2 hover:bg-neutral-800/60 transition-colors backdrop-blur-md mt-4 relative"
           >
             <QrCode className="w-5 h-5 text-neutral-400" />
             Scan QR Code
           </button>
+
+          {/* Desktop hint toast */}
+          <AnimatePresence>
+            {showQrToast && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="flex items-start gap-3 bg-neutral-800/90 backdrop-blur-md border border-neutral-700 rounded-2xl p-4 text-sm text-neutral-300"
+              >
+                <Info className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <span>Open your phone's camera app and point it at the QR code on the host's screen — it'll join automatically.</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.form>
 
         {/* Divider */}
