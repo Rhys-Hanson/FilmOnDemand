@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Play, Search, Users, Settings2, Tv, Calendar, Film, Filter } from 'lucide-react';
+import { Play, Search, Users, Settings2, Tv, Film, Filter } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { cn } from '../lib/utils';
 import { SearchableChipInput } from '../components/SearchableChipInput';
-import { DualRangeSlider } from '../components/DualRangeSlider';
 
 export interface RoomFilters {
   genres: string[];
   services: string[];
   actors: string[];
   movies?: string[];
-  yearRange: [number, number];
 }
 
 interface SettingsScreenProps {
@@ -20,23 +18,29 @@ interface SettingsScreenProps {
   onStart: (filters: RoomFilters) => void;
 }
 
-const GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Thriller', 'Animation', 'Documentary', 'Fantasy'];
+const FALLBACK_GENRES = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi', 'Romance', 'Thriller', 'Animation', 'Documentary', 'Fantasy'];
 const POPULAR_GENRES = ['Action', 'Comedy', 'Horror', 'Romance'];
 
-const STREAMING_SERVICES = ['Netflix', 'Disney+', 'Max', 'Hulu', 'Prime Video', 'Apple TV+', 'Paramount+'];
 const POPULAR_SERVICES = ['Netflix', 'Prime Video', 'Max', 'Hulu'];
 
 const ACTORS = ['Timothée Chalamet', 'Zendaya', 'Leonardo DiCaprio', 'Tom Cruise', 'Michelle Yeoh', 'Robert Pattinson', 'Florence Pugh', 'Cillian Murphy', 'Anya Taylor-Joy', 'Oscar Isaac'];
 
 const MOVIES = ['Inception', 'The Dark Knight', 'Interstellar', 'Dune', 'Spider-Man', 'Pulp Fiction', 'The Matrix', 'Avatar', 'Everything Everywhere All at Once', 'Parasite'];
+const hostIP = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
+const API_BASE_URL = `http://${hostIP}:8000/api`;
 
 export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScreenProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedActors, setSelectedActors] = useState<string[]>([]);
   const [selectedMovies, setSelectedMovies] = useState<string[]>([]);
-  const [yearRange, setYearRange] = useState<[number, number]>([1990, 2024]);
   const [filterMode, setFilterMode] = useState<'genre' | 'actor' | 'movie'>('genre');
+  const [genreOptions, setGenreOptions] = useState<string[]>(FALLBACK_GENRES);
+  const [serviceOptions, setServiceOptions] = useState<string[]>([]);
+  const [actorOptions, setActorOptions] = useState<string[]>([]);
+  const [isActorSearchLoading, setIsActorSearchLoading] = useState(false);
+  const [movieOptions, setMovieOptions] = useState<string[]>(MOVIES);
+  const [isMovieSearchLoading, setIsMovieSearchLoading] = useState(false);
 
   const handleGenresChange = (newSelection: string[]) => {
     if (newSelection.length <= 3) setSelectedGenres(newSelection);
@@ -54,6 +58,98 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
     (filterMode === 'genre' && selectedGenres.length > 0) ||
     (filterMode === 'actor' && selectedActors.length > 0) ||
     (filterMode === 'movie' && selectedMovies.length > 0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadFilterData = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/options/filter-data`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch filter data');
+        }
+
+        const data = await response.json();
+        if (!cancelled) {
+          setGenreOptions(Array.isArray(data.genres) ? data.genres : FALLBACK_GENRES);
+          setServiceOptions(Array.isArray(data.services) ? data.services : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setGenreOptions(FALLBACK_GENRES);
+          setServiceOptions(POPULAR_SERVICES);
+        }
+      }
+    };
+
+    loadFilterData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleActorQueryChange = async (query: string) => {
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 2) {
+      setActorOptions([]);
+      setIsActorSearchLoading(false);
+      return;
+    }
+
+    setIsActorSearchLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/options/actors?q=${encodeURIComponent(trimmedQuery)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch actor suggestions');
+      }
+
+      const data = await response.json();
+      setActorOptions(Array.isArray(data.actors) ? data.actors : []);
+    } catch {
+      setActorOptions([]);
+    } finally {
+      setIsActorSearchLoading(false);
+    }
+  };
+
+  const handleMovieQueryChange = async (query: string) => {
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery.length < 2) {
+      setMovieOptions(MOVIES);
+      setIsMovieSearchLoading(false);
+      return;
+    }
+
+    setIsMovieSearchLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/options/movies?q=${encodeURIComponent(trimmedQuery)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch movie suggestions');
+      }
+
+      const data = await response.json();
+      setMovieOptions(Array.isArray(data.movies) && data.movies.length > 0 ? data.movies : MOVIES);
+    } catch {
+      setMovieOptions(MOVIES);
+    } finally {
+      setIsMovieSearchLoading(false);
+    }
+  };
+
+  const popularGenreSuggestions = useMemo(() => {
+    const availableGenres = new Set(genreOptions);
+    return POPULAR_GENRES.filter((genre) => availableGenres.has(genre));
+  }, [genreOptions]);
+
+  const popularServiceSuggestions = useMemo(() => {
+    const availableServices = new Set(serviceOptions);
+    return POPULAR_SERVICES.filter((service) => availableServices.has(service));
+  }, [serviceOptions]);
 
   return (
     <div className="min-h-screen bg-neutral-950 p-6 pb-40 overflow-y-auto selection:bg-rose-500/30">
@@ -96,11 +192,11 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
           </div>
           <SearchableChipInput 
             placeholder="Search providers..." 
-            options={STREAMING_SERVICES} 
+            options={serviceOptions} 
             selected={selectedServices} 
             onChange={setSelectedServices}
             icon={<Tv className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
-            suggestions={POPULAR_SERVICES}
+            suggestions={popularServiceSuggestions}
           />
         </div>
 
@@ -141,11 +237,11 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
             </div>
             <SearchableChipInput 
               placeholder="Search genres..." 
-              options={GENRES} 
+              options={genreOptions} 
               selected={selectedGenres} 
               onChange={handleGenresChange}
               icon={<Film className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
-              suggestions={POPULAR_GENRES}
+              suggestions={popularGenreSuggestions}
             />
           </div>
         )}
@@ -158,9 +254,11 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
             </div>
             <SearchableChipInput 
               placeholder="Search talent..." 
-              options={ACTORS} 
+              options={actorOptions} 
               selected={selectedActors} 
               onChange={handleActorsChange}
+              onQueryChange={handleActorQueryChange}
+              loading={isActorSearchLoading}
               icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
             />
           </div>
@@ -174,24 +272,15 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
             </div>
             <SearchableChipInput 
               placeholder="Search movies..." 
-              options={MOVIES} 
+              options={movieOptions} 
               selected={selectedMovies} 
               onChange={handleMoviesChange}
+              onQueryChange={handleMovieQueryChange}
+              loading={isMovieSearchLoading}
               icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
             />
           </div>
         )}
-
-        {/* Year Range */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-white font-semibold text-lg">
-            <Calendar className="w-5 h-5 text-rose-400" />
-            <h2>Release Year</h2>
-          </div>
-          <div className="px-2">
-            <DualRangeSlider min={1950} max={2026} value={yearRange} onChange={setYearRange} />
-          </div>
-        </div>
 
       </motion.div>
 
@@ -203,7 +292,6 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
               if (hasSelectedParameter) {
                 onStart({ 
                   services: selectedServices, 
-                  yearRange,
                   genres: filterMode === 'genre' ? selectedGenres : [],
                   actors: filterMode === 'actor' ? selectedActors : [],
                   movies: filterMode === 'movie' ? selectedMovies : []

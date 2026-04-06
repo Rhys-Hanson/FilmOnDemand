@@ -8,11 +8,27 @@ interface SearchableChipInputProps {
   options: string[];
   selected: string[];
   onChange: (selected: string[]) => void;
+  onQueryChange?: (query: string) => void;
   icon?: React.ReactNode;
   suggestions?: string[];
+  loading?: boolean;
 }
 
-export function SearchableChipInput({ placeholder, options, selected, onChange, icon, suggestions }: SearchableChipInputProps) {
+function scoreOption(option: string, query: string): number {
+  const optionLower = option.toLowerCase();
+  const queryLower = query.toLowerCase().trim();
+
+  if (!queryLower) return Number.MAX_SAFE_INTEGER;
+  if (optionLower === queryLower) return 0;
+  if (optionLower.startsWith(queryLower)) return 1;
+
+  const index = optionLower.indexOf(queryLower);
+  if (index >= 0) return 10 + index;
+
+  return 1000 + optionLower.length;
+}
+
+export function SearchableChipInput({ placeholder, options, selected, onChange, onQueryChange, icon, suggestions, loading = false }: SearchableChipInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -21,7 +37,7 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
   const filteredOptions = query.trim().length > 0
     ? options.filter(o =>
         o.toLowerCase().includes(query.toLowerCase()) && !selected.includes(o)
-      )
+      ).sort((a, b) => scoreOption(a, query) - scoreOption(b, query)).slice(0, 10)
     : [];
 
   // Close dropdown on click outside the entire component
@@ -40,6 +56,7 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
       onChange([...selected, option]);
     }
     setQuery('');
+    onQueryChange?.('');
     setIsOpen(false);
     // Return focus to input so user can keep typing
     inputRef.current?.focus();
@@ -64,8 +81,10 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
             type="text"
             value={query}
             onChange={e => {
-              setQuery(e.target.value);
-              setIsOpen(e.target.value.trim().length > 0);
+              const nextQuery = e.target.value;
+              setQuery(nextQuery);
+              setIsOpen(nextQuery.trim().length > 0);
+              onQueryChange?.(nextQuery);
             }}
             onFocus={() => {
               if (query.trim().length > 0) setIsOpen(true);
@@ -76,7 +95,7 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
           />
           {query.length > 0 && (
             <button
-              onClick={() => { setQuery(''); setIsOpen(false); inputRef.current?.focus(); }}
+              onClick={() => { setQuery(''); onQueryChange?.(''); setIsOpen(false); inputRef.current?.focus(); }}
               className="ml-2 text-neutral-500 hover:text-white transition-colors shrink-0"
             >
               <X className="w-4 h-4" />
@@ -85,7 +104,7 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
         </div>
 
         <AnimatePresence>
-          {isOpen && filteredOptions.length > 0 && (
+          {isOpen && (filteredOptions.length > 0 || loading || query.trim().length > 0) && (
             <motion.div
               initial={{ opacity: 0, y: -8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -93,18 +112,22 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
               transition={{ duration: 0.15, ease: "easeOut" }}
               className="absolute top-full left-0 right-0 mt-2 bg-neutral-900/95 backdrop-blur-2xl border border-neutral-800 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-h-56 overflow-y-auto z-[60]"
             >
-              {filteredOptions.map((option) => (
-                <button
-                  key={option}
-                  // Use onMouseDown to fire before any potential focus events,
-                  // but now we don't need preventDefault since there's no onBlur race.
-                  onMouseDown={() => handleAdd(option)}
-                  className="w-full text-left px-5 py-3.5 text-neutral-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between border-b border-white/5 last:border-0"
-                >
-                  <span className="font-medium">{option}</span>
-                  <Plus className="w-4 h-4 text-neutral-500" />
-                </button>
-              ))}
+              {loading ? (
+                <div className="px-5 py-4 text-sm text-neutral-400">Searching options...</div>
+              ) : filteredOptions.length > 0 ? (
+                filteredOptions.map((option) => (
+                  <button
+                    key={option}
+                    onMouseDown={() => handleAdd(option)}
+                    className="w-full text-left px-5 py-3.5 text-neutral-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between border-b border-white/5 last:border-0"
+                  >
+                    <span className="font-medium">{option}</span>
+                    <Plus className="w-4 h-4 text-neutral-500" />
+                  </button>
+                ))
+              ) : (
+                <div className="px-5 py-4 text-sm text-neutral-500">No close matches yet.</div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

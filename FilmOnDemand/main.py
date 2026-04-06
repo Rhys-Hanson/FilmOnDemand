@@ -37,7 +37,6 @@ class FilmOnDemand:
                 "genres": ["Horror", "Action"],
                 "services": ["Netflix"],
                 "actor": None,
-                "yearRange": [1990, 2024],
                 "similarMovies": []
             }
         }
@@ -49,7 +48,6 @@ class FilmOnDemand:
         # Frontend sends `actors` as an array (max 1 item); fall back to legacy `actor` string
         actors_list = filters.get("actors", [])
         self.actor = actors_list[0] if actors_list else filters.get("actor", "")
-        self.year_range = filters.get("yearRange", None)
         self.similar_movies = filters.get("movies", filters.get("similarMovies", []))
 
         if self.actor:
@@ -95,12 +93,14 @@ class FilmOnDemand:
         
         for movie in movie_titles:
             info = self.tmdb.movie_info(movie)
+            info["id"] = str(self.movies_and_ids.get(movie) or movie)
             info["title"] = movie # Ensure title is always present
             movie_info_list.append(info)
 
         # Fetch Trakt stats for all movies in one batch
         print("\n--- Fetching Trakt Details ---")
-        trakt_results = self.trakt.rank_movies(movie_titles)
+        filtered_titles = [movie["title"] for movie in movie_info_list]
+        trakt_results = self.trakt.rank_movies(filtered_titles) if filtered_titles else []
 
         # Build a lookup by title so we can match results back
         trakt_lookup = {entry["title"]: entry for entry in trakt_results}
@@ -116,7 +116,7 @@ class FilmOnDemand:
             movie_dict["trakt_rating"] = trakt_data.get("trakt_rating", "N/A")
             movie_dict["rating_votes"] = trakt_data.get("rating_votes", "N/A")
         
-        self.movies_with_desc = movie_info_list
+        self.movies_with_desc = movie_info_list[:10]
         return None
     
     def run_movie_pull(self, settings):
@@ -140,7 +140,6 @@ if __name__ == "__main__":
                 "genres": ["Romance", "Action"],
                 "services": ["Netflix","Prime Video"],
                 "actor": "",
-                "yearRange": [1990, 2024],
                 "similarMovies": []
             }
         })

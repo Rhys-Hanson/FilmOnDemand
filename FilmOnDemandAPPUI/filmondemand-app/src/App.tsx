@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import useWebSocket, { ReadyState } from 'react-use-websocket';
 import { EntryScreen } from './screens/EntryScreen';
 import { SettingsScreen, RoomFilters } from './screens/SettingsScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
+import { DeckLoadingScreen } from './screens/DeckLoadingScreen';
 import { SwipeScreen } from './screens/SwipeScreen';
 import { CountdownScreen } from './screens/CountdownScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { MovieDetailOverlay } from './components/MovieDetailOverlay';
 import { Movie } from './data/movies';
 
-export type AppState = 'ENTRY' | 'SETTINGS' | 'LOBBY' | 'SWIPING' | 'COUNTDOWN' | 'RESULTS';
+export type AppState = 'ENTRY' | 'SETTINGS' | 'LOBBY' | 'LOADING_DECK' | 'SWIPING' | 'COUNTDOWN' | 'RESULTS';
 
 const CLIENT_ID = Math.random().toString(36).substring(2, 10);
 const hostIP = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
@@ -62,6 +63,9 @@ export default function App() {
         const remaining = data.count;
         setDisconnectToast(`A player disconnected. ${remaining} player${remaining !== 1 ? 's' : ''} remaining.`);
         setTimeout(() => setDisconnectToast(null), 4000);
+      } else if (data.type === 'error') {
+        alert(data.message || 'Failed to start the movie deck.');
+        setAppState(isHost ? 'SETTINGS' : 'LOBBY');
       } else if (data.type === 'game_started') {
         setDeck(data.deck);
         setAppState('SWIPING');
@@ -72,7 +76,7 @@ export default function App() {
         setAppState('COUNTDOWN');
       }
     }
-  }, [lastJsonMessage]);
+  }, [lastJsonMessage, isHost]);
 
   const handleJoinRoom = async (code: string) => {
     try {
@@ -106,6 +110,7 @@ export default function App() {
   };
 
   const handleStartSwiping = (filters: RoomFilters) => {
+    setAppState('LOADING_DECK');
     sendJsonMessage({ action: 'start_game', filters });
   };
 
@@ -183,6 +188,9 @@ export default function App() {
           playerCount={playerCount}
           onStart={handleStartSwiping} 
         />
+      )}
+      {appState === 'LOADING_DECK' && (
+        <DeckLoadingScreen />
       )}
       {appState === 'SWIPING' && (
         <SwipeScreen 

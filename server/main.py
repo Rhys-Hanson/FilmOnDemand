@@ -1,14 +1,16 @@
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import os
 import random
 import string
 from .room_manager import RoomManager
 from .mock_data import MOCK_MOVIES
 from .game_state import GameState
-import json
+from .filter_options import load_watchmode_filter_data, search_actor_names, search_movie_titles
+from .movie_service import build_deck
 
-USE_MOCK_DATA = True
+USE_MOCK_DATA = os.getenv("USE_MOCK_DATA", "false").lower() == "true"
 app = FastAPI()
 
 app.add_middleware(
@@ -31,10 +33,22 @@ manager = RoomManager()
 
 class RoomSettings(BaseModel):
     genres: list[str] = []
-    streaming_services: list[str] = []
-    year_range: list[int] = []
+    services: list[str] = []
     actors: list[str] = []
     movies: list[str] = []
+
+
+class StartGameRequest(BaseModel):
+    action: str = "start_game"
+    filters: RoomSettings
+
+
+class ActorSearchResponse(BaseModel):
+    actors: list[str]
+
+
+class MovieSearchResponse(BaseModel):
+    movies: list[str]
 
 # --- REST ENDPOINTS ---
 
@@ -59,6 +73,40 @@ async def check_room(room_code: str):
         raise HTTPException(status_code=404, detail="Room not found")
     return {"status": "valid"}
 
+
+@app.get("/api/options/filter-data")
+async def get_filter_data():
+    return load_watchmode_filter_data()
+
+
+@app.get("/api/options/actors", response_model=ActorSearchResponse)
+async def get_actor_options(q: str = "", limit: int = 12):
+    capped_limit = max(1, min(limit, 20))
+    return {"actors": search_actor_names(q, capped_limit)}
+
+
+@app.get("/api/options/movies", response_model=MovieSearchResponse)
+async def get_movie_options(q: str = "", limit: int = 12):
+    capped_limit = max(1, min(limit, 20))
+    try:
+        return {"movies": search_movie_titles(q, capped_limit)}
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch movie suggestions: {exc}") from exc
+
+
+@app.post("/api/rooms/{room_code}/start")
+async def start_room_game(room_code: str, request: StartGameRequest):
+    """Build a recommendation deck for a room using live FilmOnDemand data."""
+    if room_code not in active_rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    try:
+        deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck(request.filters.model_dump())
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to build movie deck: {exc}") from exc
+
+    return {"type": "game_started", "deck": deck}
+
 # --- WEBSOCKETS (REAL-TIME GAMEPLAY) ---
 
 @app.websocket("/ws/rooms/{room_code}/{client_id}")
@@ -80,12 +128,14 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             data = await websocket.receive_json()
             
             if data["action"] == "start_game":
-                if USE_MOCK_DATA:
-                    deck = MOCK_MOVIES
-                else:
-                    from FilmOnDemand.main import FilmOnDemand
-                    engine = FilmOnDemand()
-                    deck = engine.run_movie_pull(json.dumps(data))
+                try:
+                    deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck(data.get("filters", {}))
+                except Exception as exc:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"Failed to build movie deck: {exc}"
+                    })
+                    continue
                     
                 # Create the game state to formally track progression
                 player_count = len(manager.rooms[room_code])
