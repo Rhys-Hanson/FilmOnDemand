@@ -13,14 +13,26 @@ import { Movie } from './data/movies';
 
 export type AppState = 'ENTRY' | 'SETTINGS' | 'LOBBY' | 'LOADING_DECK' | 'SWIPING' | 'COUNTDOWN' | 'RESULTS';
 
-const CLIENT_ID = Math.random().toString(36).substring(2, 10);
+const getOrCreateClientId = () => {
+  if (typeof window === 'undefined') return Math.random().toString(36).substring(2, 10);
+  let id = localStorage.getItem('FOM_CLIENT_ID');
+  if (!id) {
+    id = Math.random().toString(36).substring(2, 10);
+    localStorage.setItem('FOM_CLIENT_ID', id);
+  }
+  return id;
+};
+
+const CLIENT_ID = getOrCreateClientId();
 const hostIP = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
 const WS_URL = `ws://${hostIP}:8000/ws/rooms`;
 const API_URL = `http://${hostIP}:8000/api/rooms`;
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>('ENTRY');
-  const [roomCode, setRoomCode] = useState<string>('');
+  const [roomCode, setRoomCode] = useState<string>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('FOM_ROOM_CODE') || '' : '';
+  });
   const [playerCount, setPlayerCount] = useState<number>(1);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [deck, setDeck] = useState<Movie[]>([]);
@@ -44,6 +56,14 @@ export default function App() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (roomCode) {
+      localStorage.setItem('FOM_ROOM_CODE', roomCode);
+    } else {
+      localStorage.removeItem('FOM_ROOM_CODE');
+    }
+  }, [roomCode]);
 
   const socketUrl = roomCode ? `${WS_URL}/${roomCode}/${CLIENT_ID}` : null;
   const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(socketUrl, {
@@ -69,6 +89,10 @@ export default function App() {
         alert(data.message || 'Failed to start the movie deck.');
         setAppState(isHost ? 'SETTINGS' : 'LOBBY');
       } else if (data.type === 'game_started') {
+        localStorage.setItem('FOM_SWIPE_INDEX', '0');
+        setDeck(data.deck);
+        setAppState('SWIPING');
+      } else if (data.type === 'game_state_sync') {
         setDeck(data.deck);
         setAppState('SWIPING');
       } else if (data.type === 'game_over') {
@@ -115,6 +139,7 @@ export default function App() {
     setDeckOffset(0);
     setLastFilters(filters);
     setAppState('LOADING_DECK');
+    localStorage.setItem('FOM_SWIPE_INDEX', '0');
     sendJsonMessage({ action: 'start_game', filters: { ...filters, offset: 0 } });
   };
 
@@ -132,6 +157,7 @@ export default function App() {
       setScores({});
       setDeckOffset(nextOffset);
       setAppState('LOADING_DECK');
+      localStorage.setItem('FOM_SWIPE_INDEX', '0');
       sendJsonMessage({ action: 'start_game', filters: { ...lastFilters, offset: nextOffset } });
     } else {
       handleAdjustSettings();
@@ -141,6 +167,7 @@ export default function App() {
   const handleAdjustSettings = () => {
     setScores({});
     setDeckOffset(0);
+    localStorage.setItem('FOM_SWIPE_INDEX', '0');
     setAppState(isHost ? 'SETTINGS' : 'LOBBY');
   };
 
@@ -211,6 +238,7 @@ export default function App() {
       )}
       {appState === 'SWIPING' && (
         <SwipeScreen 
+           roomCode={roomCode}
            movies={deck} 
            onPlayerFinished={handlePlayerFinished} 
            onSwipeServer={handleServerSwipe} 

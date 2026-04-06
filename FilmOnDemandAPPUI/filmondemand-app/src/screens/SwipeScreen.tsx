@@ -6,14 +6,21 @@ import { Heart, X, EyeOff, Star, Clapperboard } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface SwipeScreenProps {
+  roomCode: string;
   movies: Movie[];
   onPlayerFinished: () => void;
   onSwipeServer: (movieId: string, voteType: 'like' | 'dislike' | 'super_like' | 'seen_it') => void;
   onEmptyDeck?: () => void;
 }
 
-export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer, onEmptyDeck }: SwipeScreenProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export function SwipeScreen({ roomCode, movies, onPlayerFinished, onSwipeServer, onEmptyDeck }: SwipeScreenProps) {
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    return parseInt(localStorage.getItem('FOM_SWIPE_INDEX') || '0', 10);
+  });
+
+  useEffect(() => {
+    localStorage.setItem('FOM_SWIPE_INDEX', currentIndex.toString());
+  }, [currentIndex]);
   const [superLikesLeft, setSuperLikesLeft] = useState(1);
   const [isWaiting, setIsWaiting] = useState(false);
 
@@ -137,14 +144,23 @@ export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer, onEmptyDe
       </AnimatePresence>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 z-10">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mb-6 z-10 relative">
+        <div className="flex items-center gap-2 relative z-10">
           <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center border border-rose-500/30">
             <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
           </div>
           <span className="text-white font-bold">{superLikesLeft} left</span>
         </div>
-        <div className="text-neutral-400 font-mono font-medium tracking-widest">
+        
+        {/* Center: Room Code Display for Mid-Game Joins */}
+        <div className="absolute inset-x-0 flex items-center justify-center pointer-events-none">
+          <div className="px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-full flex items-center gap-2 pointer-events-auto shadow-md">
+            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Code</span>
+            <span className="text-sm font-mono font-bold text-neutral-200">{roomCode}</span>
+          </div>
+        </div>
+
+        <div className="text-neutral-400 font-mono font-medium tracking-widest relative z-10">
           {currentIndex + 1} / {movies.length}
         </div>
       </div>

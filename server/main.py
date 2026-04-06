@@ -26,7 +26,9 @@ active_rooms = {
     "000000": {
         "players": 0,
         "movies": [],
-        "scores": {} 
+        "scores": {},
+        "clients": set(),
+        "deck": []
     }
 }
 manager = RoomManager()
@@ -59,7 +61,9 @@ async def create_room():
     active_rooms[code] = {
         "players": 0,
         "movies": [],
-        "scores": {} # Tracks swipes: {"movie_id_1": 4_likes, "movie_id_2": 1_like}
+        "scores": {}, # Tracks swipes: {"movie_id_1": 4_likes, "movie_id_2": 1_like}
+        "clients": set(),
+        "deck": []
     }
     return {
         "room_code": code,
@@ -113,10 +117,36 @@ async def start_room_game(room_code: str, request: StartGameRequest):
 async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: str):
     await manager.connect(websocket, room_code)
     try:
-        await manager.broadcast_to_room(room_code, {
-            "type": "player_joined", 
-            "count": len(manager.rooms[room_code])
-        })
+        is_new_player = client_id not in active_rooms[room_code]["clients"]
+        if is_new_player:
+            active_rooms[room_code]["clients"].add(client_id)
+            game_state = active_rooms.get(room_code, {}).get("game_state")
+            if game_state:
+                game_state.total_players += 1
+
+        game_state = active_rooms.get(room_code, {}).get("game_state")
+        if game_state and active_rooms.get(room_code, {}).get("deck"):
+            if game_state.is_game_over():
+                final = game_state.get_final_results()
+                await websocket.send_json({
+                    "type": "game_over",
+                    "scores": final["scores"],
+                    "super_likes": final["super_likes"],
+                    "seen_counts": final["seen_counts"],
+                    "unanimous": final["unanimous"],
+                })
+            else:
+                # A game is already in progress. Sync this specific connection directly into it.
+                await websocket.send_json({
+                    "type": "game_state_sync",
+                    "deck": active_rooms[room_code]["deck"]
+                })
+        else:
+            # We are in the lobby. Broadcast new socket count to everyone.
+            await manager.broadcast_to_room(room_code, {
+                "type": "player_joined", 
+                "count": len(manager.rooms[room_code])
+            })
 
         # Special "Test Mode": Auto-start game for room 000000
         if room_code == "000000":
@@ -137,8 +167,10 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                     })
                     continue
                     
+                active_rooms[room_code]["deck"] = deck
+
                 # Create the game state to formally track progression
-                player_count = len(manager.rooms[room_code])
+                player_count = len(active_rooms[room_code]["clients"])
                 active_rooms[room_code]["game_state"] = GameState(room_code, player_count)
                     
                 await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": deck})
@@ -208,7 +240,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
         if remaining == 0 and room_code in active_rooms:
             del active_rooms[room_code]
             return  # Nothing left to broadcast to
-        
+            
         await manager.broadcast_to_room(room_code, {
             "type": "player_left",
             "count": remaining
