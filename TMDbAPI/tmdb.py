@@ -1,109 +1,139 @@
-from tmdb3 import searchMovie, set_key, set_cache, Movie #import the python wrapper for the TMDb API
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
-from pathlib import Path 
+from tmdbv3api import TMDb, Movie, Search
+
+IMAGE_BASE_W500 = "https://image.tmdb.org/t/p/w500"
+IMAGE_BASE_W185 = "https://image.tmdb.org/t/p/w185"
+IMAGE_BASE_ORIGINAL = "https://image.tmdb.org/t/p/original"
+YOUTUBE_WATCH = "https://www.youtube.com/watch?v="
+
 
 class TMDbAPI:
     def __init__(self):
         ROOT_DIR = Path(__file__).resolve().parent.parent
         load_dotenv(ROOT_DIR / ".env")
-        
-        self.API_KEY = os.getenv("TMDb_API_KEY")
-        
-        if not self.API_KEY:
+
+        api_key = os.getenv("TMDb_API_KEY")
+        if not api_key:
             raise ValueError("TMDb_API_KEY is missing. Check your .env file.")
-            
-        set_key(self.API_KEY) 
-        
-        set_cache("null")
-        
 
-    def movie_info(self, title):
-        possibleMovies = searchMovie(title)
+        tmdb = TMDb()
+        tmdb.api_key = api_key
+        tmdb.language = "en"
 
-        if len(possibleMovies) == 0: #boundary chcek
+        self._movie = Movie()
+        self._search = Search()
+
+    # ------------------------------------------------------------------
+    # Public interface — return shape is identical to the old tmdb3 version
+    # ------------------------------------------------------------------
+    def movie_info(self, title: str) -> dict:
+        # 1. Search for the movie to get its TMDb ID
+        results = self._search.movies(title)
+        if not results:
             return {"error": "No movie found"}
 
-        # Take the first movie from the list of possible ones
-        movie = possibleMovies[0] 
+        movie_id = results[0].id
 
-        # Poster URL
-        posterUrl = None
-        if movie.poster:
+        # 2. Fetch full details, credits, videos, and release dates
+        detail = self._movie.details(movie_id)
+        credits = self._movie.credits(movie_id)
+        videos = self._movie.videos(movie_id)
+        release_dates = self._movie.release_dates(movie_id)
+
+        # --- Poster URL ---
+        poster_url = None
+        if getattr(detail, "poster_path", None):
             try:
-                posterUrl = movie.poster.geturl('w500') #try to get medium sized poster first
-            except:
-                posterUrl = movie.poster.geturl('original')
+                poster_url = IMAGE_BASE_W500 + detail.poster_path
+            except Exception:
+                poster_url = IMAGE_BASE_ORIGINAL + detail.poster_path
 
-        # Year
+        # --- Release Year ---
         year = None
-        if movie.releasedate: #boundary check
-            year = movie.releasedate.year # gets yrea datetime object
+        raw_date = getattr(detail, "release_date", None)
+        if raw_date:
+            try:
+                year = int(str(raw_date)[:4])
+            except (ValueError, TypeError):
+                pass
 
-        # YouTube ID
-        youtubeId = None
-        if movie.youtube_trailers: #boundary check
-            url = movie.youtube_trailers[0].geturl()
-            if 'v=' in url:
-                youtubeId = url.split('v=')[-1] #to extrcat the video ID
+        # --- YouTube Trailer ---
+        youtube_id = None
+        video_results = getattr(videos, "results", []) or []
+        for v in video_results:
+            if getattr(v, "site", "") == "YouTube" and getattr(v, "type", "") == "Trailer":
+                youtube_id = v.key
+                break
+        if youtube_id is None and video_results:
+            youtube_id = getattr(video_results[0], "key", None)
 
-        # Runtime
+        # --- Runtime ---
         runtime_str = "Unknown"
-        if movie.runtime:#gives runtmie in integer value (so prolly minutes)
-            hours = movie.runtime // 60
-            minutes = movie.runtime % 60
+        runtime_mins = getattr(detail, "runtime", None)
+        if runtime_mins:
+            hours = runtime_mins // 60
+            minutes = runtime_mins % 60
             runtime_str = f"{hours}h {minutes}m"
 
-        # Maturity Rating
-        maturityRating = "Unrated"
-        if movie.releases and 'US' in movie.releases:
-            maturityRating = movie.releases['US'].certification or "Unrated"
+        # --- Maturity Rating (US certification) ---
+        maturity_rating = "Unrated"
+        rd_results = getattr(release_dates, "results", []) or []
+        for country in rd_results:
+            if getattr(country, "iso_3166_1", "") == "US":
+                dates = getattr(country, "release_dates", []) or []
+                for d in dates:
+                    cert = getattr(d, "certification", "") or ""
+                    if cert:
+                        maturity_rating = cert
+                        break
+                break
 
-        # Cast List (Top 4)
-        castList = []
-        if movie.cast:
-            for actor in movie.cast[:4]:
-                imageUrl = None
-                if actor.profile:
-                    try:
-                        imageUrl = actor.profile.geturl('w185')
-                    except:
-                        imageUrl = actor.profile.geturl('original')
-                
-                castList.append({
-                    "name": actor.name,
-                    "character": actor.character,
-                    "imageUrl": imageUrl
-                })
+        # --- Cast List (Top 4) ---
+        cast_list = []
+        raw_cast = getattr(credits, "cast", []) or []
+        for actor in raw_cast[:4]:
+            image_url = None
+            profile_path = getattr(actor, "profile_path", None)
+            if profile_path:
+                try:
+                    image_url = IMAGE_BASE_W185 + profile_path
+                except Exception:
+                    image_url = IMAGE_BASE_ORIGINAL + profile_path
+            cast_list.append({
+                "name": getattr(actor, "name", ""),
+                "character": getattr(actor, "character", ""),
+                "imageUrl": image_url,
+            })
 
-        # Genres
-        genres = []
-        if movie.genres:
-            genres = [g.name for g in movie.genres]
+        # --- Genres ---
+        genres = [g.name for g in (getattr(detail, "genres", []) or [])]
 
-        # Director 
+        # --- Director ---
         director = "Unknown"
-        if movie.crew:
-            directors = [person.name for person in movie.crew if person.job == 'Director']
-            if directors:
-                director = ", ".join(directors)
+        raw_crew = getattr(credits, "crew", []) or []
+        directors = [p.name for p in raw_crew if getattr(p, "job", "") == "Director"]
+        if directors:
+            director = ", ".join(directors)
 
-        # Studio
+        # --- Studio ---
         studio = "Unknown"
-        if movie.studios:
-            studio = movie.studios[0].name
+        companies = getattr(detail, "production_companies", []) or []
+        if companies:
+            studio = getattr(companies[0], "name", "Unknown")
 
-        # Return the Dictionary
         return {
-            "title": movie.title,
-            "description": movie.overview,
-            "posterUrl": posterUrl,
+            "title": getattr(detail, "title", title),
+            "description": getattr(detail, "overview", "No description available."),
+            "posterUrl": poster_url,
             "year": year,
-            "youtubeId": youtubeId,
+            "youtubeId": youtube_id,
             "runtime": runtime_str,
-            "maturityRating": maturityRating,
-            "castList": castList,
-            "genres": genres,        
-            "director": director,    
-            "studio": studio
+            "maturityRating": maturity_rating,
+            "castList": cast_list,
+            "genres": genres,
+            "director": director,
+            "studio": studio,
         }

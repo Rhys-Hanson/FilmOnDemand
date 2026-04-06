@@ -3,4 +3,4 @@ uvicorn[standard]
 pydantic
 python-dotenv
 requests
-tmdb3
+tmdbv3api
