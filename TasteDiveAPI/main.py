@@ -36,7 +36,6 @@ class TasteDiveAPI:
         load_dotenv(ROOT_DIR / ".env")
         self.api_key = os.getenv("TASTEDIVE_API_KEY")
         self.base_url = "https://tastedive.com/api/similar"
-
         if not self.api_key:
             # Fallback for testing environment
             self.api_key = "placeholder_key"
@@ -52,7 +51,7 @@ class TasteDiveAPI:
         }
 
         try:
-            response = requests.get(self.base_url, params=params, timeout=10)
+            response = requests.get(self.base_url, params=params, timeout=20)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
