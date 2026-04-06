@@ -2,19 +2,46 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MovieCard } from '../components/MovieCard';
 import { Movie } from '../data/movies';
-import { Heart, X, EyeOff, Star } from 'lucide-react';
+import { Heart, X, EyeOff, Star, Clapperboard } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface SwipeScreenProps {
   movies: Movie[];
   onPlayerFinished: () => void;
   onSwipeServer: (movieId: string, voteType: 'like' | 'dislike' | 'super_like' | 'seen_it') => void;
+  onEmptyDeck?: () => void;
 }
 
-export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeScreenProps) {
+export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer, onEmptyDeck }: SwipeScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [superLikesLeft, setSuperLikesLeft] = useState(1);
   const [isWaiting, setIsWaiting] = useState(false);
+
+  if (movies.length === 0) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex flex-col p-6 items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(244,63,94,0.1),transparent_45%)]" />
+        </div>
+        <div className="relative z-10 text-center max-w-sm">
+          <div className="w-20 h-20 bg-neutral-900 border border-neutral-800 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl text-rose-500/20">
+            <Clapperboard className="w-10 h-10 text-rose-500" />
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight text-white mb-3">No movies present</h2>
+          <p className="text-neutral-400 font-medium mb-8">
+            Try adjusting your filters, actors, or streaming services to find more matches.
+          </p>
+          {onEmptyDeck && (
+            <button 
+              onClick={onEmptyDeck}
+              className="px-6 py-3 w-full bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-white rounded-xl font-semibold transition-all active:scale-[0.98] shadow-md">
+              Return to Lobby
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const handleSwipe = (direction: 'left' | 'right' | 'up', movie: Movie) => {
     if (direction === 'right') {

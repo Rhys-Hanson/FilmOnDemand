@@ -11,10 +11,13 @@ interface ResultsScreenProps {
   superLikes: Record<string, number>;
   unanimous: string[];
   onReroll: () => void;
+  onAdjustSettings: () => void;
+  canReroll: boolean;
+  isHost: boolean;
   onMovieClick: (movie: Movie) => void;
 }
 
-export function ResultsScreen({ movies, scores, superLikes, unanimous, onReroll, onMovieClick }: ResultsScreenProps) {
+export function ResultsScreen({ movies, scores, superLikes, unanimous, onReroll, onAdjustSettings, canReroll, isHost, onMovieClick }: ResultsScreenProps) {
   // Sort movies by score descending
   const sortedMovies = [...movies].sort((a, b) => {
     const scoreA = scores[a.id] || 0;
@@ -240,20 +243,36 @@ export function ResultsScreen({ movies, scores, superLikes, unanimous, onReroll,
         </motion.div>
       </div>
 
-      {/* Fixed Bottom Button */}
+      {/* Fixed Bottom Buttons */}
       <motion.div 
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         transition={{ delay: 2, type: 'spring' }}
-        className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent z-50 pointer-events-none"
+        className="fixed bottom-0 left-0 right-0 p-6 flex flex-col gap-3 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent z-50 pointer-events-none max-w-md mx-auto"
       >
-        <button 
-          onClick={onReroll}
-          className="w-full max-w-md mx-auto bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-lg rounded-2xl py-5 flex items-center justify-center gap-2 shadow-xl border border-neutral-700 transition-all active:scale-[0.98] pointer-events-auto"
-        >
-          <RotateCcw className="w-6 h-6" />
-          Reroll Recommendations
-        </button>
+        {isHost ? (
+          <>
+            {canReroll && (
+              <button 
+                onClick={onReroll}
+                className="w-full bg-gradient-to-r from-rose-600 to-orange-500 hover:from-rose-500 hover:to-orange-400 text-white font-bold text-lg rounded-2xl py-4 flex items-center justify-center gap-2 shadow-xl shadow-rose-900/50 transition-all active:scale-[0.98] pointer-events-auto"
+              >
+                <RotateCcw className="w-5 h-5" />
+                Next 10 Movies
+              </button>
+            )}
+            <button 
+              onClick={onAdjustSettings}
+              className="w-full bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-lg rounded-2xl py-4 flex items-center justify-center gap-2 shadow-xl border border-neutral-700 transition-all active:scale-[0.98] pointer-events-auto"
+            >
+              Adjust Settings
+            </button>
+          </>
+        ) : (
+          <div className="w-full bg-neutral-800/80 text-neutral-400 font-bold text-sm rounded-2xl py-4 flex items-center justify-center border border-neutral-700/50 pointer-events-auto backdrop-blur-sm shadow-xl">
+            Waiting for host to restart...
+          </div>
+        )}
       </motion.div>
     </div>
   );

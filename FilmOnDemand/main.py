@@ -52,23 +52,30 @@ class FilmOnDemand:
         actors_list = filters.get("actors", [])
         self.actor = actors_list[0] if actors_list else filters.get("actor", "")
         self.similar_movies = filters.get("movies", filters.get("similarMovies", []))
+        self.offset = filters.get("offset", 0)
 
-        if self.actor:
-            self.fetch_type = "actor"
-        elif self.similar_movies:
+        if self.similar_movies:
             self.fetch_type = "similar_movies"
         else:
-            self.fetch_type = "genre"
+            self.fetch_type = "watchmode"
         
 
 # Returns a list of the top 10 most relavent movies to the settings
     def get_movies(self):        
         # From Watchmode API
-        if self.fetch_type == "actor":
-            self.movies_and_ids = self.watchmode.run_for_actors(self.actor, self.sources)
-            return None
-        elif self.fetch_type == "genre":
-            self.movies_and_ids = self.watchmode.run_for_genres(self.genres, self.sources)
+        if self.fetch_type == "watchmode":
+            source_ids = self.watchmode.get_source_ids(self.sources) if self.sources else None
+            genre_ids = self.watchmode.get_genre_ids(self.genres) if self.genres else None
+            actor_id = self.watchmode.get_actor_id(self.actor) if self.actor else None
+
+            # If actor is restricted but they requested a bogus actor name, Watchmode will return everything.
+            # We catch it gracefully here by assuming there's no matches as per legacy setup.
+            if self.actor and actor_id is None:
+                self.movies_and_ids = {}
+                return None
+                
+            data = self.watchmode.fetch_movies(genre_ids, actor_id, source_ids)
+            self.movies_and_ids = self.watchmode.parse_results(data)
             return None
         
         # From TasteDive API
@@ -94,7 +101,7 @@ class FilmOnDemand:
 # Takes the list of movies titles
     def get_movie_info(self):
         print("\n--- Fetching TMDb Details ---")
-        movie_titles = list(self.movies_and_ids.keys())[:10]
+        movie_titles = list(self.movies_and_ids.keys())[self.offset : self.offset + 10]
 
         def fetch_tmdb_info(movie):
             info = self.tmdb.movie_info(movie)

@@ -24,6 +24,8 @@ export default function App() {
   const [playerCount, setPlayerCount] = useState<number>(1);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [deck, setDeck] = useState<Movie[]>([]);
+  const [deckOffset, setDeckOffset] = useState<number>(0);
+  const [lastFilters, setLastFilters] = useState<RoomFilters | null>(null);
   
   const [scores, setScores] = useState<Record<string, number>>({});
   const [superLikes, setSuperLikes] = useState<Record<string, number>>({});
@@ -110,8 +112,10 @@ export default function App() {
   };
 
   const handleStartSwiping = (filters: RoomFilters) => {
+    setDeckOffset(0);
+    setLastFilters(filters);
     setAppState('LOADING_DECK');
-    sendJsonMessage({ action: 'start_game', filters });
+    sendJsonMessage({ action: 'start_game', filters: { ...filters, offset: 0 } });
   };
 
   const handlePlayerFinished = () => {
@@ -123,7 +127,20 @@ export default function App() {
   };
 
   const handleReroll = () => {
+    if (lastFilters && deckOffset === 0) {
+      const nextOffset = 10;
+      setScores({});
+      setDeckOffset(nextOffset);
+      setAppState('LOADING_DECK');
+      sendJsonMessage({ action: 'start_game', filters: { ...lastFilters, offset: nextOffset } });
+    } else {
+      handleAdjustSettings();
+    }
+  };
+
+  const handleAdjustSettings = () => {
     setScores({});
+    setDeckOffset(0);
     setAppState(isHost ? 'SETTINGS' : 'LOBBY');
   };
 
@@ -197,6 +214,7 @@ export default function App() {
            movies={deck} 
            onPlayerFinished={handlePlayerFinished} 
            onSwipeServer={handleServerSwipe} 
+           onEmptyDeck={handleAdjustSettings}
         />
       )}
       {appState === 'COUNTDOWN' && (
@@ -209,6 +227,9 @@ export default function App() {
           superLikes={superLikes}
           unanimous={unanimous}
           onReroll={handleReroll} 
+          onAdjustSettings={handleAdjustSettings}
+          canReroll={isHost && deckOffset === 0}
+          isHost={isHost}
           onMovieClick={setSelectedMovie} 
         />
       )}

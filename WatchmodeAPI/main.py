@@ -81,33 +81,22 @@ class WatchmodeAPI:
             return None
 
 
-# takes a list of genres ids and source ids and outputs the json script of the top 10 movies
-    def fetch_movies_by_genre(self, genre_ids, source_ids=None):
+# fetches movies by genre, actor, and source, returning the json script showing top 20 movies
+    def fetch_movies(self, genre_ids=None, actor_id=None, source_ids=None):
         params = {
             "apiKey": self.API_KEY,
-            "source_ids": ",".join(str(x) for x in (source_ids or [])),
             "types": "movie",
             "regions": "CA",
             "sort_by": "popularity_desc",
             "limit": 20,
-            "genres": ",".join(str(x) for x in genre_ids)
+            "source_types": "sub"
         }
-        
-        response = self.session.get(self.base_url, params=params, timeout=20)
-        response.raise_for_status()
-        return response.json()
-
-# takes in the actor's id and the source ids and outputs the json script of the top 10 movies 
-    def fetch_movies_by_actor(self, actor_id, source_ids=None):
-        params = {
-            "apiKey": self.API_KEY,
-            "source_ids": ",".join(str(x) for x in (source_ids or [])),
-            "types": "movie",
-            "regions": "CA",
-            "sort_by": "popularity_desc",
-            "limit": 20,
-            "person_id": actor_id
-        }
+        if source_ids:
+            params["source_ids"] = ",".join(str(x) for x in source_ids)
+        if genre_ids:
+            params["genres"] = ",".join(str(x) for x in genre_ids)
+        if actor_id:
+            params["person_id"] = actor_id
         
         response = self.session.get(self.base_url, params=params, timeout=20)
         response.raise_for_status()
@@ -157,7 +146,7 @@ class WatchmodeAPI:
         data = response.json()
 
         sources = data.get("sources", [])
-        sources = [source["source_id"] for source in sources]
+        sources = [source["source_id"] for source in sources if source.get("type") == "sub"]
 
         return {"tmdb_id": tmdb_id, "sources": sources}
 
@@ -168,21 +157,3 @@ class WatchmodeAPI:
             movies[item["title"]] = item["tmdb_id"]
         return movies
     
-    def run_for_actors(self, actor_name, sources):
-        source_ids = self.get_source_ids(sources)
-        actor_id = self.get_actor_id(actor_name)
-
-        if actor_id is None:
-            return []
-
-        data = self.fetch_movies_by_actor(actor_id, source_ids)
-        movie_list = self.parse_results(data)
-        return movie_list
-    
-    def run_for_genres(self, genres, sources):
-        source_ids = self.get_source_ids(sources)
-        genre_ids = self.get_genre_ids(genres)
-
-        data = self.fetch_movies_by_genre(genre_ids, source_ids)
-        movie_list = self.parse_results(data)
-        return movie_list
