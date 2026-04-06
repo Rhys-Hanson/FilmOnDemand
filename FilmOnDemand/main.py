@@ -10,6 +10,7 @@ from WatchmodeAPI.main import WatchmodeAPI
 from TraktAPI.main import TraktAPI
 from TMDbAPI.tmdb import TMDbAPI
 from TasteDiveAPI.main import TasteDiveAPI
+from OMDbAPI.main import OMDbAPI
 
 
 class FilmOnDemand:
@@ -18,6 +19,7 @@ class FilmOnDemand:
         self.trakt = TraktAPI()
         self.tmdb = TMDbAPI()
         self.tastedive = TasteDiveAPI()
+        self.omdb = OMDbAPI()
         
         self.fetch_type = None
         self.sources = []
@@ -114,6 +116,19 @@ class FilmOnDemand:
         # Build a lookup by title so we can match results back
         trakt_lookup = {entry["title"]: entry for entry in trakt_results}
 
+        # Fetch OMDb enrichment in parallel with post-Trakt processing
+        print("\n--- Fetching OMDb Details ---")
+        def fetch_omdb(movie_dict):
+            return self.omdb.enrich(movie_dict["title"], year=movie_dict.get("year"))
+
+        with ThreadPoolExecutor(max_workers=min(8, len(movie_info_list) or 1)) as executor:
+            omdb_results = list(executor.map(fetch_omdb, movie_info_list))
+
+        omdb_lookup = {
+            movie_info_list[i]["title"]: omdb_results[i]
+            for i in range(len(movie_info_list))
+        }
+
         for movie_dict in movie_info_list:
             trakt_data = trakt_lookup.get(movie_dict["title"], {})
             movie_dict["trending_rank"] = trakt_data.get("trending_rank", None)
@@ -124,6 +139,26 @@ class FilmOnDemand:
             movie_dict["collectors"] = trakt_data.get("collectors", 0)
             movie_dict["trakt_rating"] = trakt_data.get("trakt_rating", "N/A")
             movie_dict["rating_votes"] = trakt_data.get("rating_votes", "N/A")
+
+            # Merge OMDb enrichment — only overwrite if we got real data
+            omdb_data = omdb_lookup.get(movie_dict["title"]) or {}
+            if omdb_data:
+                # Scores — OMDb is authoritative for these
+                movie_dict["imdbScore"] = omdb_data.get("imdbScore") or 0
+                movie_dict["imdbVotes"] = omdb_data.get("imdbVotes")
+                movie_dict["rtScore"] = omdb_data.get("rtScore") or 0
+                movie_dict["metacriticScore"] = omdb_data.get("metacriticScore") or 0
+                # Context fields — only set if not already populated by TMDb
+                if omdb_data.get("writer"):
+                    movie_dict["writer"] = omdb_data["writer"]
+                if omdb_data.get("language"):
+                    movie_dict["language"] = omdb_data["language"]
+                if omdb_data.get("country"):
+                    movie_dict["country"] = omdb_data["country"]
+                if omdb_data.get("awards"):
+                    movie_dict["awards"] = omdb_data["awards"]
+                if omdb_data.get("boxOffice"):
+                    movie_dict["boxOffice"] = omdb_data["boxOffice"]
         
         self.movies_with_desc = movie_info_list
         return None
