@@ -34,7 +34,9 @@ export default function App() {
     return typeof window !== 'undefined' ? localStorage.getItem('FOM_ROOM_CODE') || '' : '';
   });
   const [playerCount, setPlayerCount] = useState<number>(1);
-  const [isHost, setIsHost] = useState<boolean>(false);
+  const [isHost, setIsHost] = useState<boolean>(() => {
+    return typeof window !== 'undefined' ? localStorage.getItem('FOM_IS_HOST') === 'true' : false;
+  });
   const [deck, setDeck] = useState<Movie[]>([]);
   const [deckOffset, setDeckOffset] = useState<number>(0);
   const [lastFilters, setLastFilters] = useState<RoomFilters | null>(null);
@@ -60,10 +62,12 @@ export default function App() {
   useEffect(() => {
     if (roomCode) {
       localStorage.setItem('FOM_ROOM_CODE', roomCode);
+      localStorage.setItem('FOM_IS_HOST', isHost ? 'true' : 'false');
     } else {
       localStorage.removeItem('FOM_ROOM_CODE');
+      localStorage.removeItem('FOM_IS_HOST');
     }
-  }, [roomCode]);
+  }, [roomCode, isHost]);
 
   const socketUrl = roomCode ? `${WS_URL}/${roomCode}/${CLIENT_ID}` : null;
   const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(socketUrl, {
