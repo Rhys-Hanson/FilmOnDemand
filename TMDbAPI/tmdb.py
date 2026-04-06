@@ -62,7 +62,7 @@ class TMDbAPI:
 
         # --- YouTube Trailer ---
         youtube_id = None
-        video_results = getattr(videos, "results", []) or []
+        video_results = list(getattr(videos, "results", None) or [])
         for v in video_results:
             if getattr(v, "site", "") == "YouTube" and getattr(v, "type", "") == "Trailer":
                 youtube_id = v.key
@@ -80,10 +80,10 @@ class TMDbAPI:
 
         # --- Maturity Rating (US certification) ---
         maturity_rating = "Unrated"
-        rd_results = getattr(release_dates, "results", []) or []
+        rd_results = list(getattr(release_dates, "results", None) or [])
         for country in rd_results:
             if getattr(country, "iso_3166_1", "") == "US":
-                dates = getattr(country, "release_dates", []) or []
+                dates = list(getattr(country, "release_dates", None) or [])
                 for d in dates:
                     cert = getattr(d, "certification", "") or ""
                     if cert:
@@ -93,7 +93,7 @@ class TMDbAPI:
 
         # --- Cast List (Top 4) ---
         cast_list = []
-        raw_cast = getattr(credits, "cast", []) or []
+        raw_cast = list(getattr(credits, "cast", None) or [])
         for actor in raw_cast[:4]:
             image_url = None
             profile_path = getattr(actor, "profile_path", None)
@@ -109,18 +109,18 @@ class TMDbAPI:
             })
 
         # --- Genres ---
-        genres = [g.name for g in (getattr(detail, "genres", []) or [])]
+        genres = [g.name for g in list(getattr(detail, "genres", None) or [])]
 
         # --- Director ---
         director = "Unknown"
-        raw_crew = getattr(credits, "crew", []) or []
+        raw_crew = list(getattr(credits, "crew", None) or [])
         directors = [p.name for p in raw_crew if getattr(p, "job", "") == "Director"]
         if directors:
             director = ", ".join(directors)
 
         # --- Studio ---
         studio = "Unknown"
-        companies = getattr(detail, "production_companies", []) or []
+        companies = list(getattr(detail, "production_companies", None) or [])
         if companies:
             studio = getattr(companies[0], "name", "Unknown")
 
