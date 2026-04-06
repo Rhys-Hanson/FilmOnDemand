@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+import requests
 from tmdbv3api import TMDb, Movie, Search
 
 IMAGE_BASE_W500 = "https://image.tmdb.org/t/p/w500"
@@ -124,6 +125,25 @@ class TMDbAPI:
         if companies:
             studio = getattr(companies[0], "name", "Unknown")
 
+        # --- Streaming Providers (TMDb - US/CA/GB fallback) ---
+        streaming_services = []
+        try:
+            prov_res = requests.get(
+                f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers?api_key={self._movie.tmdb.api_key}", 
+                timeout=5
+            )
+            if prov_res.ok:
+                prov_data = prov_res.json().get("results", {})
+                # Prioritize CA since watchmode is restricted to CA in this deployment, fallback to US
+                regional_providers = prov_data.get("CA") or prov_data.get("US", {})
+                flatrate = regional_providers.get("flatrate", [])
+                for provider in flatrate:
+                    name = provider.get("provider_name")
+                    if name and name not in streaming_services:
+                        streaming_services.append(name)
+        except Exception:
+            pass
+
         return {
             "title": getattr(detail, "title", title),
             "description": getattr(detail, "overview", "No description available."),
@@ -136,4 +156,5 @@ class TMDbAPI:
             "genres": genres,
             "director": director,
             "studio": studio,
+            "streamingServices": streaming_services,
         }

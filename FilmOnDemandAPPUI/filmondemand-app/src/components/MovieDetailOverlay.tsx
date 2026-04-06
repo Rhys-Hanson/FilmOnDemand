@@ -108,7 +108,7 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
             {/* Rotten Tomatoes */}
             <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
               <div className="mb-1">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Rotten_Tomatoes.svg/100px-Rotten_Tomatoes.svg.png" alt="RT" className="w-5 h-5 object-contain" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Rotten_Tomatoes.svg" alt="RT" className="w-5 h-5 object-contain" />
               </div>
               <span className="text-xl font-bold text-white">{movie.rtScore > 0 ? `${movie.rtScore}%` : 'N/A'}</span>
               <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">Tomatometer</span>
