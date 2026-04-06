@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MovieCard } from '../components/MovieCard';
 import { Movie } from '../data/movies';
@@ -44,6 +44,42 @@ export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeSc
       onPlayerFinished();
     }
   };
+
+  // ── Keyboard shortcuts ───────────────────────────────────────────────
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Don't fire if deck is done or a text input is focused
+    if (isWaiting || currentIndex >= movies.length) return;
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+    const movie = movies[currentIndex];
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        handleSwipe('left', movie);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        handleSwipe('right', movie);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        handleSwipe('up', movie);
+        break;
+      case ' ':
+      case 'Enter':
+        e.preventDefault();
+        handleSuperLike();
+        break;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, isWaiting, movies]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+  // ─────────────────────────────────────────────────────────────────────
+
 
   return (
     <div className="min-h-screen bg-neutral-950 flex flex-col p-6 overflow-hidden relative">
@@ -149,6 +185,29 @@ export function SwipeScreen({ movies, onPlayerFinished, onSwipeServer }: SwipeSc
           <EyeOff className="w-4 h-4" />
           Already seen it
         </button>
+      </div>
+
+      {/* Keyboard hint */}
+      <div className="flex justify-center items-center gap-3 mt-4 z-10 pb-4 hidden md:flex">
+        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
+          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">←</kbd>
+          Nope
+        </span>
+        <span className="text-neutral-700 text-[10px]">·</span>
+        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
+          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">→</kbd>
+          Like
+        </span>
+        <span className="text-neutral-700 text-[10px]">·</span>
+        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
+          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">↑</kbd>
+          Seen it
+        </span>
+        <span className="text-neutral-700 text-[10px]">·</span>
+        <span className="flex items-center gap-1.5 text-neutral-600 text-[11px] font-medium">
+          <kbd className="px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400 text-[10px] font-mono">space</kbd>
+          Super ⭐
+        </span>
       </div>
     </div>
   );
