@@ -4,6 +4,7 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$PROJECT_ROOT/FilmOnDemandAPPUI/filmondemand-app"
+VENV_DIR="$PROJECT_ROOT/.venv"
 BACKEND_PID=""
 
 cleanup() {
@@ -36,11 +37,21 @@ require_command "python3" "Install Python 3, then make sure 'python3' is availab
 require_command "npm" "Install Node.js from https://nodejs.org or via Homebrew, then try again."
 
 echo
-echo "[1/3] Installing Python backend dependencies..."
+echo "[1/4] Preparing Python virtual environment..."
+if [ ! -d "$VENV_DIR" ]; then
+    python3 -m venv "$VENV_DIR"
+fi
+
+# shellcheck disable=SC1091
+source "$VENV_DIR/bin/activate"
+
+echo
+echo "[2/4] Installing Python backend dependencies..."
+python3 -m pip install --upgrade pip
 python3 -m pip install -r "$PROJECT_ROOT/requirements.txt"
 
 echo
-echo "[2/3] Starting FastAPI backend on port 8000..."
+echo "[3/4] Starting FastAPI backend on port 8000..."
 cd "$PROJECT_ROOT"
 python3 -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
@@ -49,7 +60,7 @@ echo "Waiting 3 seconds for backend to start..."
 sleep 3
 
 echo
-echo "[3/3] Starting React frontend..."
+echo "[4/4] Starting React frontend..."
 cd "$FRONTEND_DIR"
 
 if [ ! -d "node_modules" ]; then
