@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Play, Search, Users, Settings2, Tv, Film, Filter } from 'lucide-react';
+import { Play, Search, Users, Sparkles, Tv, Film, Filter } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { cn } from '../lib/utils';
 import { SearchableChipInput } from '../components/SearchableChipInput';
@@ -175,13 +175,21 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
           <button 
             onClick={() => setIsAiMode(!isAiMode)}
             className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner transition-colors",
+              "w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner transition-all duration-300 relative group",
               isAiMode 
-                ? "bg-rose-500/20 border-rose-500/50" 
-                : "bg-neutral-900 border-neutral-800"
+                ? "bg-rose-500/20 border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.15)]" 
+                : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"
             )}
           >
-            <Settings2 className={cn("w-6 h-6", isAiMode ? "text-rose-400" : "text-neutral-400")} />
+            {isAiMode && (
+              <motion.div 
+                layoutId="ai-glow"
+                className="absolute inset-0 rounded-2xl bg-rose-500/10 blur-xl px-4"
+                animate={{ opacity: [0.5, 0.8, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              />
+            )}
+            <Sparkles className={cn("w-6 h-6 transition-all relative z-10", isAiMode ? "text-rose-400 scale-110 drop-shadow-[0_0_8px_rgba(251,113,133,0.5)]" : "text-neutral-400 group-hover:text-neutral-300")} />
           </button>
         </div>
 
