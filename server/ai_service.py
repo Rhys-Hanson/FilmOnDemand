@@ -28,16 +28,39 @@ def generate_movie_recommendations(prompt: str, services: Optional[List[str]] = 
             + services_instruction
         )
         
-        response = client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.7,
-                system_instruction=system_instruction,
-                response_mime_type="application/json"
-            ),
-        )
-        
+        # Fallback list based on your account's available models
+        available_models = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.0-flash-lite']
+        response = None
+        last_error = None
+
+        for model_id in available_models:
+            try:
+                response = client.models.generate_content(
+                    model=model_id,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.7,
+                        system_instruction=system_instruction,
+                        response_mime_type="application/json"
+                    ),
+                )
+                if response:
+                    break
+            except Exception as e:
+                last_error = e
+                # If it's a 404, we just try the next model silently
+                if "404" in str(e):
+                    continue
+                # If it's a 429, we still try the next model in case it has its own quota
+                if "429" in str(e):
+                    continue
+                raise e
+
+        if not response:
+            if last_error:
+                raise last_error
+            return []
+            
         text_response = response.text
         if not text_response:
             return []
@@ -57,6 +80,10 @@ def generate_movie_recommendations(prompt: str, services: Optional[List[str]] = 
         logger.error("google-genai package is not installed.")
         return []
     except Exception as e:
-        logger.exception("Failed to generate movie recommendations with Gemini API")
+        # Check if this is a 429/Rate Limit error to log it cleanly
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+            logger.warning("Gemini API rate limit exceeded (429). Please wait 15 seconds.")
+        else:
+            logger.exception("Failed to generate movie recommendations with Gemini API")
         return []
 
