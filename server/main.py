@@ -2,6 +2,11 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
+from dotenv import load_dotenv
+
+# Load .env file if it exists
+load_dotenv()
+
 import random
 import string
 import time
