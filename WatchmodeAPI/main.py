@@ -56,6 +56,11 @@ class WatchmodeAPI:
             for item in self.source_data
             if item.get("name")
         }
+        self._source_name_lookup = {
+            item["id"]: item["name"]
+            for item in self.source_data
+            if item.get("id") and item.get("name")
+        }
 
 # takes a list of strings through the genres param and returns a corresponding list of IDs
     def get_genre_ids(self, genres):
@@ -149,6 +154,16 @@ class WatchmodeAPI:
         sources = [source["source_id"] for source in sources if source.get("type") == "sub"]
 
         return {"tmdb_id": tmdb_id, "sources": sources}
+
+    def get_source_names(self, source_ids):
+        names = []
+        seen = set()
+        for source_id in source_ids or []:
+            name = self._source_name_lookup.get(source_id)
+            if name and name not in seen:
+                seen.add(name)
+                names.append(name)
+        return names
 
 # take the json file from fetch_movies_by_? and parses the results and creates a dict of format {titles: tmdb_id}
     def parse_results(self, data): 

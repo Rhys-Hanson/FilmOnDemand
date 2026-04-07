@@ -34,6 +34,7 @@ active_rooms = {
         "movies": [],
         "scores": {},
         "clients": set(),
+        "connected_clients": set(),
         "deck": [],
         "last_ai_generation": 0.0
     }
@@ -71,6 +72,7 @@ async def create_room():
         "movies": [],
         "scores": {}, # Tracks swipes: {"movie_id_1": 4_likes, "movie_id_2": 1_like}
         "clients": set(),
+        "connected_clients": set(),
         "deck": [],
         "last_ai_generation": 0.0
     }
@@ -140,12 +142,17 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
         return
         
     try:
+        active_rooms[room_code]["connected_clients"].add(client_id)
         is_new_player = client_id not in active_rooms[room_code]["clients"]
         if is_new_player:
             active_rooms[room_code]["clients"].add(client_id)
             game_state = active_rooms.get(room_code, {}).get("game_state")
             if game_state:
-                game_state.total_players += 1
+                game_state.player_connected(client_id)
+        else:
+            game_state = active_rooms.get(room_code, {}).get("game_state")
+            if game_state:
+                game_state.player_connected(client_id)
 
         game_state = active_rooms.get(room_code, {}).get("game_state")
         if game_state and active_rooms.get(room_code, {}).get("deck"):
@@ -175,7 +182,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
         # Special "Test Mode": Auto-start game for room 000000
         if room_code == "000000":
             if "game_state" not in active_rooms[room_code]:
-                active_rooms[room_code]["game_state"] = GameState(room_code, 1) # Support single player test
+                active_rooms[room_code]["game_state"] = GameState(room_code, {client_id}) # Support single player test
             await websocket.send_json({"type": "game_started", "deck": MOCK_MOVIES})
 
         while True:
@@ -207,8 +214,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                 active_rooms[room_code]["deck"] = deck
 
                 # Create the game state to formally track progression
-                player_count = len(active_rooms[room_code]["clients"])
-                active_rooms[room_code]["game_state"] = GameState(room_code, player_count)
+                active_player_ids = set(active_rooms[room_code]["connected_clients"])
+                active_rooms[room_code]["game_state"] = GameState(room_code, active_player_ids)
                     
                 await manager.broadcast_to_room(room_code, {"type": "game_started", "deck": deck})
                 
@@ -220,7 +227,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                     game_state.register_swipe(movie_id, liked=True)
                     
                     # Unanimous detection: everyone has now liked this movie
-                    if game_state.likes[movie_id] >= game_state.total_players:
+                    if game_state.active_players and game_state.likes[movie_id] >= len(game_state.active_players):
                         await manager.broadcast_to_room(room_code, {
                             "type": "match_found",
                             "movie_id": movie_id
@@ -246,7 +253,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                     game_state.register_super_like(movie_id)
                     
                     # Super-like also counts for unanimous detection
-                    if game_state.likes[movie_id] >= game_state.total_players:
+                    if game_state.active_players and game_state.likes[movie_id] >= len(game_state.active_players):
                         await manager.broadcast_to_room(room_code, {
                             "type": "match_found",
                             "movie_id": movie_id
@@ -256,7 +263,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                 game_state = active_rooms[room_code].get("game_state")
                 
                 if game_state:
-                    game_state.player_finished_deck()
+                    game_state.player_finished_deck(client_id)
                     
                     if game_state.is_game_over():
                         final = game_state.get_final_results()
@@ -270,6 +277,12 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_code)
+        room_state = active_rooms.get(room_code)
+        if room_state:
+            room_state.get("connected_clients", set()).discard(client_id)
+            game_state = room_state.get("game_state")
+            if game_state:
+                game_state.player_disconnected(client_id)
         
         remaining = len(manager.rooms.get(room_code, []))
         
@@ -282,7 +295,14 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             "type": "player_left",
             "count": remaining
         })
-        
-        # Do not artificially reduce expected player count on disconnect.
-        # This ensures users who refresh their browser mid-game aren't permanently
-        # removed, keeping the game session stable for reconnection.
+
+        game_state = room_state.get("game_state") if room_state else None
+        if game_state and game_state.is_game_over():
+            final = game_state.get_final_results()
+            await manager.broadcast_to_room(room_code, {
+                "type": "game_over",
+                "scores": final["scores"],
+                "super_likes": final["super_likes"],
+                "seen_counts": final["seen_counts"],
+                "unanimous": final["unanimous"],
+            })

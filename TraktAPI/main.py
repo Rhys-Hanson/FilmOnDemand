@@ -184,6 +184,67 @@ class TraktAPI:
         )
         return ranked + not_found
 
+    def get_rating_fallbacks(self, movie_titles):
+        """
+        Fetch lightweight Trakt rating data for a batch of titles.
+        Returns a lookup keyed by the requested title so callers can backfill
+        missing score fields without paying for the heavier stats workflow.
+        """
+        headers = self.get_headers()
+
+        def build_entry(title):
+            entry = {
+                "title": title,
+                "trakt_rating": 0.0,
+                "rating_votes": 0,
+                "rt_like_score": 0,
+                "metacritic_like_score": 0,
+            }
+
+            search_response = requests.get(
+                f"{self.base_url}/search/movie",
+                headers=headers,
+                params={"query": title, "limit": 1},
+                timeout=20,
+            )
+            if search_response.status_code != 200 or not search_response.json():
+                return entry
+
+            movie_data = search_response.json()[0].get("movie", {})
+            slug = movie_data.get("ids", {}).get("slug")
+            if not slug:
+                return entry
+
+            ratings_response = requests.get(
+                f"{self.base_url}/movies/{slug}/ratings",
+                headers=headers,
+                timeout=20,
+            )
+            if ratings_response.status_code != 200:
+                return entry
+
+            ratings_data = ratings_response.json()
+            trakt_rating = float(ratings_data.get("rating") or 0)
+            rating_votes = int(ratings_data.get("votes") or 0)
+
+            # Trakt gives us a 0-10 rating, so we derive percentage-style
+            # fallback values for the score cards when OMDb is blank.
+            scaled_score = max(0, min(100, round(trakt_rating * 10)))
+
+            entry["trakt_rating"] = round(trakt_rating, 2)
+            entry["rating_votes"] = rating_votes
+            entry["rt_like_score"] = scaled_score
+            entry["metacritic_like_score"] = scaled_score
+            return entry
+
+        if movie_titles:
+            with ThreadPoolExecutor(max_workers=min(8, len(movie_titles))) as executor:
+                entries = list(executor.map(build_entry, movie_titles))
+        else:
+            entries = []
+
+        return {entry["title"]: entry for entry in entries}
+
     def fetch_category(self, category):
         """
         Fetches top movies for a given category and returns a list of movie entries

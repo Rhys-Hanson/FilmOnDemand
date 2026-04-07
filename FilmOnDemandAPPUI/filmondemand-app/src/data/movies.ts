@@ -15,6 +15,11 @@ export interface Movie {
   imdbScore: number;
   metacriticScore: number;
   imdbVotes?: string;
+  imdbScoreSource?: 'omdb' | 'trakt';
+  rtScoreSource?: 'omdb' | 'trakt';
+  metacriticScoreSource?: 'omdb' | 'trakt';
+  traktRating?: number;
+  traktVotes?: number;
   summary: string;
   genre: string[];
   year: number;

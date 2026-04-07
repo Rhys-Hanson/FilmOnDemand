@@ -1,20 +1,42 @@
 import React from 'react';
 import { motion, PanInfo } from 'motion/react';
 import { Movie } from '../data/movies';
-import { ArrowLeft, Clock, Calendar, Film, Trophy, DollarSign, Clapperboard, PenLine } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, Film, Trophy, DollarSign, Clapperboard } from 'lucide-react';
 
 interface MovieDetailOverlayProps {
   movie: Movie;
   onClose: () => void;
 }
 
+function formatCompactNumber(value?: number) {
+  if (!value) return 'N/A';
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
 export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) {
   const handleDragEnd = (e: any, info: PanInfo) => {
-    // Dismiss if swiped down significantly
     if (info.offset.y > 100 || info.velocity.y > 500) {
       onClose();
     }
   };
+
+  const imdbTitle = movie.imdbScoreSource === 'trakt' ? 'Trakt' : 'IMDb';
+  const imdbValue = movie.imdbScore > 0 ? movie.imdbScore.toFixed(1) : 'N/A';
+  const imdbFooter = movie.imdbScoreSource === 'trakt'
+    ? (movie.traktVotes ? `${movie.traktVotes.toLocaleString()} user votes` : 'User rating')
+    : (movie.imdbVotes ? `${movie.imdbVotes} votes` : 'IMDb rating');
+
+  const middleCardIsTrakt = movie.rtScoreSource === 'trakt';
+  const middleTitle = middleCardIsTrakt ? 'Trakt Rating' : 'Tomatometer';
+  const middleValue = middleCardIsTrakt
+    ? (movie.traktRating && movie.traktRating > 0 ? `${movie.traktRating.toFixed(1)}/10` : 'N/A')
+    : (movie.rtScore > 0 ? `${movie.rtScore}%` : 'N/A');
+
+  const rightCardIsTrakt = movie.metacriticScoreSource === 'trakt';
+  const rightTitle = rightCardIsTrakt ? 'Trakt Votes' : 'Metascore';
+  const rightValue = rightCardIsTrakt
+    ? formatCompactNumber(movie.traktVotes)
+    : (movie.metacriticScore > 0 ? String(movie.metacriticScore) : 'N/A');
 
   return (
     <motion.div
@@ -28,11 +50,8 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
       onDragEnd={handleDragEnd}
       className="fixed inset-0 z-[100] flex flex-col bg-neutral-950/80 backdrop-blur-2xl overflow-hidden"
     >
-      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto pb-24">
-        {/* Header Trailer Section */}
         <div className="relative w-full aspect-video bg-black">
-          {/* Back Button */}
           <button
             onClick={onClose}
             className="absolute top-6 left-4 z-10 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white border border-white/20 active:scale-95 transition-transform"
@@ -40,7 +59,6 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          {/* YouTube Embed Placeholder */}
           <iframe
             className="w-full h-full"
             src={`https://www.youtube.com/embed/${movie.youtubeId}?autoplay=0&controls=1&rel=0`}
@@ -51,9 +69,7 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
           ></iframe>
         </div>
 
-        {/* Content Container */}
         <div className="px-6 py-8 space-y-8">
-          {/* Title Card & Hero Assets */}
           <div className="flex gap-6">
             <div className="w-1/3 shrink-0">
               <img
@@ -67,8 +83,7 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
               <h1 className="text-3xl font-black text-white leading-tight mb-4">
                 {movie.title}
               </h1>
-              
-              {/* Metadata Row */}
+
               <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm font-medium text-neutral-400">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" />
@@ -84,7 +99,7 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
                   </span>
                 </div>
               </div>
-              
+
               <div className="mt-3 flex flex-wrap gap-2">
                 {movie.genre.map(g => (
                   <span key={g} className="px-2.5 py-1 rounded-full bg-white/10 text-xs font-medium text-neutral-300">
@@ -95,35 +110,36 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
             </div>
           </div>
 
-          {/* The Hook (Ratings) */}
           <div className="grid grid-cols-3 gap-3">
-            {/* IMDb */}
             <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
-              <span className="font-black tracking-tighter text-base text-yellow-400 leading-none mb-1">IMDb</span>
-              <span className="text-xl font-bold text-white">{movie.imdbScore}</span>
-              {movie.imdbVotes && (
-                <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">{movie.imdbVotes} votes</span>
-              )}
+              <span className="font-black tracking-tighter text-base text-yellow-400 leading-none mb-1">{imdbTitle}</span>
+              <span className="text-xl font-bold text-white">{imdbValue}</span>
+              <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">{imdbFooter}</span>
             </div>
-            {/* Rotten Tomatoes */}
+
             <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
               <div className="mb-1">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Rotten_Tomatoes.svg" alt="RT" className="w-5 h-5 object-contain" />
+                {middleCardIsTrakt ? (
+                  <div className="w-5 h-5 bg-sky-500 flex items-center justify-center rounded-sm">
+                    <span className="text-white text-[10px] font-black leading-none">T</span>
+                  </div>
+                ) : (
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/Rotten_Tomatoes.svg" alt="RT" className="w-5 h-5 object-contain" />
+                )}
               </div>
-              <span className="text-xl font-bold text-white">{movie.rtScore > 0 ? `${movie.rtScore}%` : 'N/A'}</span>
-              <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">Tomatometer</span>
+              <span className="text-xl font-bold text-white">{middleValue}</span>
+              <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">{middleTitle}</span>
             </div>
-            {/* Metacritic */}
+
             <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-neutral-900/50 border border-neutral-800">
               <div className="w-5 h-5 bg-emerald-500 flex items-center justify-center rounded-sm mb-1">
-                <span className="text-white text-[10px] font-black leading-none">M</span>
+                <span className="text-white text-[10px] font-black leading-none">{rightCardIsTrakt ? 'T' : 'M'}</span>
               </div>
-              <span className="text-xl font-bold text-white">{movie.metacriticScore > 0 ? movie.metacriticScore : 'N/A'}</span>
-              <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">Metascore</span>
+              <span className="text-xl font-bold text-white">{rightValue}</span>
+              <span className="text-[10px] text-neutral-500 mt-0.5 leading-none">{rightTitle}</span>
             </div>
           </div>
 
-          {/* Streaming Services */}
           {movie.streamingServices && movie.streamingServices.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Available On</h3>
@@ -138,7 +154,6 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
             </div>
           )}
 
-          {/* The Story (Description) */}
           <div className="space-y-3">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <Film className="w-5 h-5 text-rose-500" />
@@ -149,7 +164,6 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
             </p>
           </div>
 
-          {/* Filmmakers (Director / Writer) */}
           {(movie.director || movie.writer) && (
             <div className="space-y-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -173,7 +187,6 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
             </div>
           )}
 
-          {/* Awards & Box Office */}
           {(movie.awards || movie.boxOffice) && (
             <div className="space-y-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -200,7 +213,6 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
             </div>
           )}
 
-          {/* The Talent (Cast Section) */}
           <div className="space-y-4">
             <h3 className="text-lg font-bold text-white">Top Billed Cast</h3>
             <div className="flex overflow-x-auto pb-4 -mx-6 px-6 gap-4 snap-x hide-scrollbar">
@@ -213,7 +225,6 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
                       className="w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                       onError={(e) => {
-                        // Fallback if image fails to load
                         (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(actor.name)}&background=random&color=fff`;
                       }}
                     />
@@ -230,8 +241,7 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
           </div>
         </div>
       </div>
-      
-      {/* Drag Handle Indicator */}
+
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-white/20 pointer-events-none" />
     </motion.div>
   );

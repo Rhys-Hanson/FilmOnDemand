@@ -1,11 +1,11 @@
 from collections import Counter
-from typing import Dict
+from typing import Iterable
 
 class GameState:
-    def __init__(self, room_code: str, initial_player_count: int):
+    def __init__(self, room_code: str, player_ids: Iterable[str]):
         self.room_code = room_code
-        self.total_players = initial_player_count
-        self.finished_players = 0
+        self.active_players: set[str] = {player_id for player_id in player_ids if player_id}
+        self.finished_players: set[str] = set()
         
         # Net score: +1 right, +2 super-like, -1 left, -2 seen-it
         self.scores = Counter()
@@ -40,20 +40,31 @@ class GameState:
         self.scores[movie_id] -= 2
         self.seen_count[movie_id] += 1
 
-    def player_finished_deck(self):
-        """Called when a player hits the end of their deck. Increment finished_players count."""
-        self.finished_players += 1
+    def player_finished_deck(self, client_id: str):
+        """Called when a player hits the end of their deck. Duplicate finish events are ignored."""
+        if client_id:
+            self.finished_players.add(client_id)
+
+    def player_connected(self, client_id: str):
+        """Count a reconnecting or newly joined player as active for completion checks."""
+        if client_id:
+            self.active_players.add(client_id)
+
+    def player_disconnected(self, client_id: str):
+        """Stop waiting on players who are no longer connected to the room."""
+        if client_id:
+            self.active_players.discard(client_id)
         
     def is_game_over(self) -> bool:
-        """Returns True if finished_players == total_players."""
-        return self.finished_players >= self.total_players
+        """Returns True if every tracked player has finished their deck."""
+        return bool(self.active_players) and self.active_players.issubset(self.finished_players)
 
     def get_final_results(self) -> dict:
         """Returns all scoring data for the frontend."""
         # Unanimous = every player cast a positive vote (right or super-like)
         unanimous = [
             mid for mid, count in self.likes.items()
-            if self.total_players > 0 and count >= self.total_players
+            if self.active_players and count >= len(self.active_players)
         ]
         return {
             "scores": dict(self.scores.most_common()),

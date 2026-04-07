@@ -17,12 +17,19 @@ export function SwipeScreen({ roomCode, movies, onPlayerFinished, onSwipeServer,
   const [currentIndex, setCurrentIndex] = useState(() => {
     return parseInt(localStorage.getItem('FOM_SWIPE_INDEX') || '0', 10);
   });
+  const [superLikesLeft, setSuperLikesLeft] = useState(1);
+  const [isWaiting, setIsWaiting] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('FOM_SWIPE_INDEX', currentIndex.toString());
   }, [currentIndex]);
-  const [superLikesLeft, setSuperLikesLeft] = useState(1);
-  const [isWaiting, setIsWaiting] = useState(false);
+
+  useEffect(() => {
+    const savedIndex = parseInt(localStorage.getItem('FOM_SWIPE_INDEX') || '0', 10);
+    setCurrentIndex(Math.min(Number.isNaN(savedIndex) ? 0 : savedIndex, Math.max(movies.length - 1, 0)));
+    setSuperLikesLeft(1);
+    setIsWaiting(false);
+  }, [movies]);
 
   if (movies.length === 0) {
     return (
