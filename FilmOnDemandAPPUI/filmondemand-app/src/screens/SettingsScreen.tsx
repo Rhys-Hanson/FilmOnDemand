@@ -213,9 +213,43 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
           />
         </div>
 
-        {/* Filter Mode Selector & Dynamic Input */}
+        {/* AI Input Strategy Selector (Always pinned here in AI Mode) */}
+        {isAiMode && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-2 text-white font-semibold text-lg">
+              <span className="text-xl">✨</span>
+              <h2>AI Input Strategy</h2>
+            </div>
+            
+            <div className="flex gap-2 bg-neutral-900 p-1.5 rounded-[16px] border border-white/5">
+              <button 
+                onClick={() => setAiInputStrategy('text')}
+                className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", aiInputStrategy === 'text' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
+              >
+                Custom Prompt
+              </button>
+              <button 
+                onClick={() => setAiInputStrategy('parameters')}
+                className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", aiInputStrategy === 'parameters' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
+              >
+                Use Parameters
+              </button>
+            </div>
+
+            {aiInputStrategy === 'text' && (
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Describe the movies you want to watch... e.g. 'Sci-fi movies about time travel but not Interstellar'"
+                className="w-full h-32 mt-4 bg-neutral-900 border border-white/10 rounded-2xl p-4 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none animate-in fade-in zoom-in-95 duration-200"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Core Filters / Parameters Section */}
         {(!isAiMode || aiInputStrategy === 'parameters') && (
-          <>
+          <div className="space-y-8">
             {!isAiMode && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-semibold text-lg">
@@ -245,91 +279,58 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
               </div>
             )}
 
-        {/* Dynamic Filter Input */}
-        {((!isAiMode && filterMode === 'genre') || (isAiMode && aiInputStrategy === 'parameters')) && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-2 text-white font-semibold text-lg">
-              <Film className="w-5 h-5 text-rose-400" />
-              <h2>Genres {isAiMode ? "(No Limit)" : "(Max 3)"}</h2>
-            </div>
-            <SearchableChipInput 
-              placeholder="Search genres..." 
-              options={genreOptions} 
-              selected={selectedGenres} 
-              onChange={handleGenresChange}
-              icon={<Film className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
-              suggestions={popularGenreSuggestions}
-            />
-          </div>
-        )}
+            {/* Dynamic Filter Inputs */}
+            {((!isAiMode && filterMode === 'genre') || (isAiMode && aiInputStrategy === 'parameters')) && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2 text-white font-semibold text-lg">
+                  <Film className="w-5 h-5 text-rose-400" />
+                  <h2>Genres {isAiMode ? "(No Limit)" : "(Max 3)"}</h2>
+                </div>
+                <SearchableChipInput 
+                  placeholder="Search genres..." 
+                  options={genreOptions} 
+                  selected={selectedGenres} 
+                  onChange={handleGenresChange}
+                  icon={<Film className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
+                  suggestions={popularGenreSuggestions}
+                />
+              </div>
+            )}
 
-        {((!isAiMode && filterMode === 'actor') || (isAiMode && aiInputStrategy === 'parameters')) && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-2 text-white font-semibold text-lg">
-              <Users className="w-5 h-5 text-rose-400" />
-              <h2>Actor & Director {isAiMode ? "(No Limit)" : "(Max 1)"}</h2>
-            </div>
-            <SearchableChipInput 
-              placeholder="Search talent..." 
-              options={actorOptions} 
-              selected={selectedActors} 
-              onChange={handleActorsChange}
-              onQueryChange={handleActorQueryChange}
-              loading={isActorSearchLoading}
-              icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
-            />
-          </div>
-        )}
+            {((!isAiMode && filterMode === 'actor') || (isAiMode && aiInputStrategy === 'parameters')) && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2 text-white font-semibold text-lg">
+                  <Users className="w-5 h-5 text-rose-400" />
+                  <h2>Actor & Director {isAiMode ? "(No Limit)" : "(Max 1)"}</h2>
+                </div>
+                <SearchableChipInput 
+                  placeholder="Search talent..." 
+                  options={actorOptions} 
+                  selected={selectedActors} 
+                  onChange={handleActorsChange}
+                  onQueryChange={handleActorQueryChange}
+                  loading={isActorSearchLoading}
+                  icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
+                />
+              </div>
+            )}
 
-        {((!isAiMode && filterMode === 'movie') || (isAiMode && aiInputStrategy === 'parameters')) && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-2 text-white font-semibold text-lg">
-              <Play className="w-5 h-5 text-rose-400" />
-              <h2>Similar Movies {isAiMode ? "(No Limit)" : "(Max 3)"}</h2>
-            </div>
-              <SearchableChipInput 
-                placeholder="Search movies..." 
-                options={movieOptions} 
-                selected={selectedMovies} 
-                onChange={handleMoviesChange}
-                onQueryChange={handleMovieQueryChange}
-                loading={isMovieSearchLoading}
-                icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
-              />
-            </div>
-          )}
-          </>
-        )}
-        
-        {isAiMode && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex items-center gap-2 text-white font-semibold text-lg">
-              <span className="text-xl">✨</span>
-              <h2>AI Input Strategy</h2>
-            </div>
-            
-            <div className="flex gap-2 bg-neutral-900 p-1.5 rounded-[16px] border border-white/5">
-              <button 
-                onClick={() => setAiInputStrategy('text')}
-                className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", aiInputStrategy === 'text' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
-              >
-                Custom Prompt
-              </button>
-              <button 
-                onClick={() => setAiInputStrategy('parameters')}
-                className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", aiInputStrategy === 'parameters' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
-              >
-                Use Parameters
-              </button>
-            </div>
-
-            {aiInputStrategy === 'text' && (
-              <textarea
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="Describe the movies you want to watch... e.g. 'Sci-fi movies about time travel but not Interstellar'"
-                className="w-full h-32 mt-4 bg-neutral-900 border border-white/10 rounded-2xl p-4 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none"
-              />
+            {((!isAiMode && filterMode === 'movie') || (isAiMode && aiInputStrategy === 'parameters')) && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2 text-white font-semibold text-lg">
+                  <Play className="w-5 h-5 text-rose-400" />
+                  <h2>Similar Movies {isAiMode ? "(No Limit)" : "(Max 3)"}</h2>
+                </div>
+                <SearchableChipInput 
+                  placeholder="Search movies..." 
+                  options={movieOptions} 
+                  selected={selectedMovies} 
+                  onChange={handleMoviesChange}
+                  onQueryChange={handleMovieQueryChange}
+                  loading={isMovieSearchLoading}
+                  icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
+                />
+              </div>
             )}
           </div>
         )}
