@@ -78,7 +78,7 @@ def normalize_movie_payload(filters: dict[str, Any], raw_movies: list[dict[str, 
                 "youtubeId": movie.get("youtubeId") or "",
                 "maturityRating": movie.get("maturityRating") or "Unrated",
                 "runtime": movie.get("runtime") or "Unknown",
-                "streamingServices": movie.get("streamingServices") or requested_services,
+                "streamingServices": movie.get("streamingServices") or [],
                 # OMDb enrichment fields
                 "director": movie.get("director") or None,
                 "writer": movie.get("writer") or None,
