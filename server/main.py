@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import os
 import random
 import string
+import time
 from .room_manager import RoomManager
 from .mock_data import MOCK_MOVIES
 from .game_state import GameState
@@ -28,7 +29,8 @@ active_rooms = {
         "movies": [],
         "scores": {},
         "clients": set(),
-        "deck": []
+        "deck": [],
+        "last_ai_generation": 0.0
     }
 }
 manager = RoomManager()
@@ -38,6 +40,7 @@ class RoomSettings(BaseModel):
     services: list[str] = []
     actors: list[str] = []
     movies: list[str] = []
+    ai_prompt: str | None = None
 
 
 class StartGameRequest(BaseModel):
@@ -63,7 +66,8 @@ async def create_room():
         "movies": [],
         "scores": {}, # Tracks swipes: {"movie_id_1": 4_likes, "movie_id_2": 1_like}
         "clients": set(),
-        "deck": []
+        "deck": [],
+        "last_ai_generation": 0.0
     }
     return {
         "room_code": code,
@@ -104,8 +108,16 @@ async def start_room_game(room_code: str, request: StartGameRequest):
     if room_code not in active_rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
+    filters_dict = request.filters.model_dump()
+    if filters_dict.get("ai_prompt"):
+        current_time = time.time()
+        last_gen_time = active_rooms[room_code].get("last_ai_generation", 0.0)
+        if current_time - last_gen_time < 15.0:
+            raise HTTPException(status_code=429, detail="AI generation is rate-limited. Please wait 15 seconds before trying again.")
+        active_rooms[room_code]["last_ai_generation"] = current_time
+
     try:
-        deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck(request.filters.model_dump())
+        deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck(filters_dict)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Failed to build movie deck: {exc}") from exc
 
@@ -116,6 +128,12 @@ async def start_room_game(room_code: str, request: StartGameRequest):
 @app.websocket("/ws/rooms/{room_code}/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: str):
     await manager.connect(websocket, room_code)
+    if room_code not in active_rooms:
+        await websocket.send_json({"type": "room_expired"})
+        await websocket.close()
+        manager.disconnect(websocket, room_code)
+        return
+        
     try:
         is_new_player = client_id not in active_rooms[room_code]["clients"]
         if is_new_player:
@@ -139,7 +157,8 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                 # A game is already in progress. Sync this specific connection directly into it.
                 await websocket.send_json({
                     "type": "game_state_sync",
-                    "deck": active_rooms[room_code]["deck"]
+                    "deck": active_rooms[room_code]["deck"],
+                    "is_new_player": is_new_player
                 })
         else:
             # We are in the lobby. Broadcast new socket count to everyone.
@@ -158,8 +177,21 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             data = await websocket.receive_json()
             
             if data["action"] == "start_game":
+                filters = data.get("filters", {})
+                
+                if filters.get("ai_prompt"):
+                    current_time = time.time()
+                    last_gen_time = active_rooms[room_code].get("last_ai_generation", 0.0)
+                    if current_time - last_gen_time < 15.0:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "AI generation is rate-limited. Please wait 15 seconds before trying again."
+                        })
+                        continue
+                    active_rooms[room_code]["last_ai_generation"] = current_time
+
                 try:
-                    deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck(data.get("filters", {}))
+                    deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck(filters)
                 except Exception as exc:
                     await websocket.send_json({
                         "type": "error",
@@ -246,18 +278,6 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             "count": remaining
         })
         
-        # If a game is in progress, reduce expected player count so the game
-        # can still reach game_over without waiting for the disconnected player.
-        game_state = active_rooms.get(room_code, {}).get("game_state")
-        if game_state and game_state.total_players > 1:
-            game_state.total_players -= 1
-            # If that decrement tips us over the finish line, end the game now
-            if game_state.is_game_over():
-                final = game_state.get_final_results()
-                await manager.broadcast_to_room(room_code, {
-                    "type": "game_over",
-                    "scores": final["scores"],
-                    "super_likes": final["super_likes"],
-                    "seen_counts": final["seen_counts"],
-                    "unanimous": final["unanimous"],
-                })
+        # Do not artificially reduce expected player count on disconnect.
+        # This ensures users who refresh their browser mid-game aren't permanently
+        # removed, keeping the game session stable for reconnection.

@@ -172,7 +172,13 @@ class FilmOnDemand:
     
     def run_movie_pull(self, settings):
         self.settings(settings)
-        self.get_movies()
+        filters = json.loads(settings).get("filters", {})
+        if filters.get("ai_prompt"):
+            from server.ai_service import generate_movie_recommendations
+            ai_titles = generate_movie_recommendations(filters.get("ai_prompt"), filters.get("services", []))
+            self.movies_and_ids = {title: "" for title in ai_titles}
+        else:
+            self.get_movies()
         self.get_movie_info()
         return self.movies_with_desc
 

@@ -4,3 +4,4 @@ pydantic
 python-dotenv
 requests
 tmdbv3api
+google-genai==1.70.0

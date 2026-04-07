@@ -89,6 +89,12 @@ export default function App() {
         const remaining = data.count;
         setDisconnectToast(`A player disconnected. ${remaining} player${remaining !== 1 ? 's' : ''} remaining.`);
         setTimeout(() => setDisconnectToast(null), 4000);
+      } else if (data.type === 'room_expired') {
+        setRoomCode('');
+        setAppState('ENTRY');
+        localStorage.removeItem('FOM_ROOM_CODE');
+        localStorage.removeItem('FOM_IS_HOST');
+        alert("This room has expired or the server restarted.");
       } else if (data.type === 'error') {
         alert(data.message || 'Failed to start the movie deck.');
         setAppState(isHost ? 'SETTINGS' : 'LOBBY');
@@ -97,6 +103,9 @@ export default function App() {
         setDeck(data.deck);
         setAppState('SWIPING');
       } else if (data.type === 'game_state_sync') {
+        if (data.is_new_player) {
+          localStorage.setItem('FOM_SWIPE_INDEX', '0');
+        }
         setDeck(data.deck);
         setAppState('SWIPING');
       } else if (data.type === 'game_over') {

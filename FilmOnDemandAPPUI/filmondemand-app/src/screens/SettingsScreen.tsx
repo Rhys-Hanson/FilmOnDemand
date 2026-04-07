@@ -10,6 +10,7 @@ export interface RoomFilters {
   services: string[];
   actors: string[];
   movies?: string[];
+  ai_prompt?: string;
 }
 
 interface SettingsScreenProps {
@@ -35,6 +36,9 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
   const [selectedActors, setSelectedActors] = useState<string[]>([]);
   const [selectedMovies, setSelectedMovies] = useState<string[]>([]);
   const [filterMode, setFilterMode] = useState<'genre' | 'actor' | 'movie'>('genre');
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiInputStrategy, setAiInputStrategy] = useState<'parameters' | 'text'>('text');
   const [genreOptions, setGenreOptions] = useState<string[]>(FALLBACK_GENRES);
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
   const [actorOptions, setActorOptions] = useState<string[]>([]);
@@ -43,21 +47,22 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
   const [isMovieSearchLoading, setIsMovieSearchLoading] = useState(false);
 
   const handleGenresChange = (newSelection: string[]) => {
-    if (newSelection.length <= 3) setSelectedGenres(newSelection);
+    if (isAiMode || newSelection.length <= 3) setSelectedGenres(newSelection);
   };
 
   const handleActorsChange = (newSelection: string[]) => {
-    if (newSelection.length <= 1) setSelectedActors(newSelection);
+    if (isAiMode || newSelection.length <= 1) setSelectedActors(newSelection);
   };
 
   const handleMoviesChange = (newSelection: string[]) => {
-    if (newSelection.length <= 3) setSelectedMovies(newSelection);
+    if (isAiMode || newSelection.length <= 3) setSelectedMovies(newSelection);
   };
 
-  const hasSelectedParameter = 
-    (filterMode === 'genre' && selectedGenres.length > 0) ||
-    (filterMode === 'actor' && selectedActors.length > 0) ||
-    (filterMode === 'movie' && selectedMovies.length > 0);
+  const hasSelectedParameter = isAiMode 
+    ? (aiInputStrategy === 'text' ? aiPrompt.trim().length > 0 : (selectedGenres.length > 0 || selectedActors.length > 0 || selectedMovies.length > 0))
+    : (filterMode === 'genre' && selectedGenres.length > 0) ||
+      (filterMode === 'actor' && selectedActors.length > 0) ||
+      (filterMode === 'movie' && selectedMovies.length > 0);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,9 +172,17 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
               {playerCount} {playerCount === 1 ? 'player' : 'players'} joined
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-neutral-900 flex items-center justify-center border border-neutral-800 shadow-inner">
-            <Settings2 className="w-6 h-6 text-neutral-400" />
-          </div>
+          <button 
+            onClick={() => setIsAiMode(!isAiMode)}
+            className={cn(
+              "w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner transition-colors",
+              isAiMode 
+                ? "bg-rose-500/20 border-rose-500/50" 
+                : "bg-neutral-900 border-neutral-800"
+            )}
+          >
+            <Settings2 className={cn("w-6 h-6", isAiMode ? "text-rose-400" : "text-neutral-400")} />
+          </button>
         </div>
 
         {/* Room Code */}
@@ -200,40 +213,44 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
           />
         </div>
 
-        {/* Filter Mode Selector */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-white font-semibold text-lg">
-            <Filter className="w-5 h-5 text-rose-400" />
-            <h2>Core Filter Strategy</h2>
-          </div>
-          <div className="flex gap-2 bg-neutral-900 p-1.5 rounded-[16px] border border-white/5">
-            <button 
-              onClick={() => setFilterMode('genre')} 
-              className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", filterMode === 'genre' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
-            >
-              Genres
-            </button>
-            <button 
-              onClick={() => setFilterMode('actor')} 
-              className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", filterMode === 'actor' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
-            >
-              Actor
-            </button>
-            <button 
-              onClick={() => setFilterMode('movie')} 
-              className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", filterMode === 'movie' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
-            >
-              Movie
-            </button>
-          </div>
-        </div>
+        {/* Filter Mode Selector & Dynamic Input */}
+        {(!isAiMode || aiInputStrategy === 'parameters') && (
+          <>
+            {!isAiMode && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-white font-semibold text-lg">
+                  <Filter className="w-5 h-5 text-rose-400" />
+                  <h2>Core Filter Strategy</h2>
+                </div>
+                <div className="flex gap-2 bg-neutral-900 p-1.5 rounded-[16px] border border-white/5">
+                  <button 
+                    onClick={() => setFilterMode('genre')} 
+                    className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", filterMode === 'genre' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
+                  >
+                    Genres
+                  </button>
+                  <button 
+                    onClick={() => setFilterMode('actor')} 
+                    className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", filterMode === 'actor' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
+                  >
+                    Actor
+                  </button>
+                  <button 
+                    onClick={() => setFilterMode('movie')} 
+                    className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", filterMode === 'movie' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
+                  >
+                    Movie
+                  </button>
+                </div>
+              </div>
+            )}
 
         {/* Dynamic Filter Input */}
-        {filterMode === 'genre' && (
+        {((!isAiMode && filterMode === 'genre') || (isAiMode && aiInputStrategy === 'parameters')) && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-2 text-white font-semibold text-lg">
               <Film className="w-5 h-5 text-rose-400" />
-              <h2>Genres (Max 3)</h2>
+              <h2>Genres {isAiMode ? "(No Limit)" : "(Max 3)"}</h2>
             </div>
             <SearchableChipInput 
               placeholder="Search genres..." 
@@ -246,11 +263,11 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
           </div>
         )}
 
-        {filterMode === 'actor' && (
+        {((!isAiMode && filterMode === 'actor') || (isAiMode && aiInputStrategy === 'parameters')) && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-2 text-white font-semibold text-lg">
               <Users className="w-5 h-5 text-rose-400" />
-              <h2>Actor & Director (Max 1)</h2>
+              <h2>Actor & Director {isAiMode ? "(No Limit)" : "(Max 1)"}</h2>
             </div>
             <SearchableChipInput 
               placeholder="Search talent..." 
@@ -264,21 +281,56 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
           </div>
         )}
 
-        {filterMode === 'movie' && (
+        {((!isAiMode && filterMode === 'movie') || (isAiMode && aiInputStrategy === 'parameters')) && (
           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-2 text-white font-semibold text-lg">
               <Play className="w-5 h-5 text-rose-400" />
-              <h2>Similar Movies (Max 3)</h2>
+              <h2>Similar Movies {isAiMode ? "(No Limit)" : "(Max 3)"}</h2>
             </div>
-            <SearchableChipInput 
-              placeholder="Search movies..." 
-              options={movieOptions} 
-              selected={selectedMovies} 
-              onChange={handleMoviesChange}
-              onQueryChange={handleMovieQueryChange}
-              loading={isMovieSearchLoading}
-              icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
-            />
+              <SearchableChipInput 
+                placeholder="Search movies..." 
+                options={movieOptions} 
+                selected={selectedMovies} 
+                onChange={handleMoviesChange}
+                onQueryChange={handleMovieQueryChange}
+                loading={isMovieSearchLoading}
+                icon={<Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
+              />
+            </div>
+          )}
+          </>
+        )}
+        
+        {isAiMode && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-2 text-white font-semibold text-lg">
+              <span className="text-xl">✨</span>
+              <h2>AI Input Strategy</h2>
+            </div>
+            
+            <div className="flex gap-2 bg-neutral-900 p-1.5 rounded-[16px] border border-white/5">
+              <button 
+                onClick={() => setAiInputStrategy('text')}
+                className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", aiInputStrategy === 'text' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
+              >
+                Custom Prompt
+              </button>
+              <button 
+                onClick={() => setAiInputStrategy('parameters')}
+                className={cn("flex-1 py-2.5 text-sm rounded-xl font-bold transition-all duration-300", aiInputStrategy === 'parameters' ? "bg-white/10 text-white shadow-sm" : "text-neutral-500 hover:text-white hover:bg-white/5")}
+              >
+                Use Parameters
+              </button>
+            </div>
+
+            {aiInputStrategy === 'text' && (
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Describe the movies you want to watch... e.g. 'Sci-fi movies about time travel but not Interstellar'"
+                className="w-full h-32 mt-4 bg-neutral-900 border border-white/10 rounded-2xl p-4 text-white placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-rose-500/50 resize-none"
+              />
+            )}
           </div>
         )}
 
@@ -290,11 +342,25 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
           <motion.button 
             onClick={() => {
               if (hasSelectedParameter) {
+                let computedAiPrompt = undefined;
+                if (isAiMode) {
+                  if (aiInputStrategy === 'text') {
+                    computedAiPrompt = aiPrompt.trim();
+                  } else {
+                    const conditions = [];
+                    if (selectedGenres.length > 0) conditions.push(`Genres: ${selectedGenres.join(", ")}`);
+                    if (selectedActors.length > 0) conditions.push(`Actors/Directors: ${selectedActors.join(", ")}`);
+                    if (selectedMovies.length > 0) conditions.push(`Similar to: ${selectedMovies.join(", ")}`);
+                    computedAiPrompt = `Recommend movies with the following parameters: ${conditions.join(" | ")}. Please consider all provided conditions together.`;
+                  }
+                }
+
                 onStart({ 
                   services: selectedServices, 
-                  genres: filterMode === 'genre' ? selectedGenres : [],
-                  actors: filterMode === 'actor' ? selectedActors : [],
-                  movies: filterMode === 'movie' ? selectedMovies : []
+                  genres: (!isAiMode && filterMode === 'genre') ? selectedGenres : [],
+                  actors: (!isAiMode && filterMode === 'actor') ? selectedActors : [],
+                  movies: (!isAiMode && filterMode === 'movie') ? selectedMovies : [],
+                  ai_prompt: computedAiPrompt
                 });
               }
             }}

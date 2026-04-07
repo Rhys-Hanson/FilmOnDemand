@@ -64,7 +64,7 @@ export function ResultsScreen({ movies, scores, superLikes, unanimous, onReroll,
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-6 pb-32 overflow-y-auto">
+    <div className="min-h-screen bg-neutral-950 p-6 pb-56 overflow-y-auto">
       <div className="max-w-md mx-auto">
         <div className="text-center mb-12 pt-8">
           <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-400 drop-shadow-md mb-2">
