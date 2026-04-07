@@ -5,6 +5,21 @@ from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
+
+def _normalize_titles(raw_titles, limit: int = 20) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for title in raw_titles or []:
+        clean_title = str(title).strip()
+        key = clean_title.casefold()
+        if not clean_title or key in seen:
+            continue
+        seen.add(key)
+        normalized.append(clean_title)
+        if len(normalized) >= limit:
+            break
+    return normalized
+
 def generate_movie_recommendations(prompt: str, services: Optional[List[str]] = None) -> List[str]:
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -23,7 +38,7 @@ def generate_movie_recommendations(prompt: str, services: Optional[List[str]] = 
 
         system_instruction = (
             "You are a helpful movie recommendation AI."
-            " You must return EXACTLY AND ONLY a JSON list of strings containing movie titles based on the user's prompt."
+            " You must return EXACTLY AND ONLY a JSON list of 20 unique movie titles based on the user's prompt."
             " Return just the JSON array of strings (e.g. ['Inception', 'Batman']), no markdown formatting, no fluff."
             + services_instruction
         )
@@ -33,19 +48,44 @@ def generate_movie_recommendations(prompt: str, services: Optional[List[str]] = 
         response = None
         last_error = None
 
+        titles: list[str] = []
+        retry_prompt = prompt
+
         for model_id in available_models:
             try:
-                response = client.models.generate_content(
-                    model=model_id,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        temperature=0.7,
-                        system_instruction=system_instruction,
-                        response_mime_type="application/json"
-                    ),
-                )
-                if response:
-                    break
+                for _ in range(2):
+                    response = client.models.generate_content(
+                        model=model_id,
+                        contents=retry_prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=0.7,
+                            system_instruction=system_instruction,
+                            response_mime_type="application/json"
+                        ),
+                    )
+                    if not response or not response.text:
+                        continue
+
+                    try:
+                        parsed = json.loads(response.text)
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to parse AI response as JSON: {response.text}")
+                        continue
+
+                    if isinstance(parsed, dict) and "titles" in parsed:
+                        parsed = parsed.get("titles", [])
+                    if not isinstance(parsed, list):
+                        continue
+
+                    titles = _normalize_titles([*titles, *parsed], limit=20)
+                    if len(titles) >= 20:
+                        return titles
+
+                    retry_prompt = (
+                        f"{prompt}\n\n"
+                        f"Return {20 - len(titles)} more unique movie titles that are different from these: "
+                        f"{', '.join(titles)}."
+                    )
             except Exception as e:
                 last_error = e
                 # If it's a 404, we just try the next model silently
@@ -60,21 +100,8 @@ def generate_movie_recommendations(prompt: str, services: Optional[List[str]] = 
             if last_error:
                 raise last_error
             return []
-            
-        text_response = response.text
-        if not text_response:
-            return []
-            
-        try:
-            titles = json.loads(text_response)
-            if isinstance(titles, list):
-                return [str(title) for title in titles]
-            elif isinstance(titles, dict) and "titles" in titles:
-                return [str(title) for title in titles.get("titles", [])]
-            return []
-        except json.JSONDecodeError:
-            logger.error(f"Failed to parse AI response as JSON: {text_response}")
-            return []
+
+        return titles
 
     except ImportError:
         logger.error("google-genai package is not installed.")
