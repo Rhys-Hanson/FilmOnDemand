@@ -12,6 +12,7 @@ interface SearchableChipInputProps {
   icon?: React.ReactNode;
   suggestions?: string[];
   loading?: boolean;
+  isAiMode?: boolean;
 }
 
 function scoreOption(option: string, query: string): number {
@@ -28,7 +29,17 @@ function scoreOption(option: string, query: string): number {
   return 1000 + optionLower.length;
 }
 
-export function SearchableChipInput({ placeholder, options, selected, onChange, onQueryChange, icon, suggestions, loading = false }: SearchableChipInputProps) {
+export function SearchableChipInput({ 
+  placeholder, 
+  options, 
+  selected, 
+  onChange, 
+  onQueryChange, 
+  icon, 
+  suggestions, 
+  loading = false,
+  isAiMode = false
+}: SearchableChipInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -72,8 +83,9 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
     <div className="space-y-3" ref={containerRef}>
       <div className="relative">
         <div className={cn(
-          "flex items-center bg-neutral-900/60 border rounded-2xl px-4 py-3.5 transition-all backdrop-blur-xl shadow-inner",
-          isOpen ? "border-rose-500/50 ring-2 ring-rose-500/20 bg-neutral-900/80" : "border-neutral-800/80 hover:border-neutral-700"
+          "flex items-center border rounded-2xl px-4 py-3.5 transition-all backdrop-blur-xl shadow-inner",
+          isAiMode ? "bg-rose-500/[0.02] border-rose-500/10 hover:border-rose-500/20" : "bg-neutral-900/60 border-neutral-800/80 hover:border-neutral-700",
+          isOpen && (isAiMode ? "border-rose-500/30 ring-1 ring-rose-500/10 bg-rose-950/10" : "border-rose-500/30 ring-1 ring-rose-500/10 bg-neutral-900/80")
         )}>
           {icon || <Search className="w-5 h-5 text-neutral-500 mr-3 shrink-0" />}
           <input
@@ -110,7 +122,10 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute top-full left-0 right-0 mt-2 bg-neutral-900/95 backdrop-blur-2xl border border-neutral-800 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-h-56 overflow-y-auto z-[60]"
+              className={cn(
+                "absolute top-full left-0 right-0 mt-2 bg-neutral-900/95 backdrop-blur-2xl border rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] max-h-56 overflow-y-auto z-[60]",
+                isAiMode ? "border-rose-500/20" : "border-neutral-800"
+              )}
             >
               {loading ? (
                 <div className="px-5 py-4 text-sm text-neutral-400">Searching options...</div>
@@ -119,7 +134,10 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
                   <button
                     key={option}
                     onMouseDown={() => handleAdd(option)}
-                    className="w-full text-left px-5 py-3.5 text-neutral-300 hover:bg-white/5 hover:text-white transition-colors flex items-center justify-between border-b border-white/5 last:border-0"
+                    className={cn(
+                      "w-full text-left px-5 py-3.5 text-neutral-300 transition-colors flex items-center justify-between border-b border-white/5 last:border-0",
+                      isAiMode ? "hover:bg-rose-500/10 hover:text-rose-100" : "hover:bg-white/5 hover:text-white"
+                    )}
                   >
                     <span className="font-medium">{option}</span>
                     <Plus className="w-4 h-4 text-neutral-500" />
@@ -145,7 +163,10 @@ export function SearchableChipInput({ placeholder, options, selected, onChange, 
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, width: 0, margin: 0, padding: 0 }}
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  className="flex items-center gap-1.5 bg-white/10 border border-white/10 text-white px-3.5 py-1.5 rounded-full text-sm font-medium backdrop-blur-md shadow-sm"
+                  className={cn(
+                    "flex items-center gap-1.5 border text-white px-3.5 py-1.5 rounded-full text-sm font-medium backdrop-blur-md shadow-sm",
+                    isAiMode ? "bg-rose-500/20 border-rose-500/30" : "bg-white/10 border-white/10"
+                  )}
                 >
                   {item}
                   <button 
