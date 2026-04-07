@@ -180,18 +180,25 @@ export function MovieDetailOverlay({ movie, onClose }: MovieDetailOverlayProps) 
                 <Trophy className="w-5 h-5 text-amber-400" />
                 Awards & Box Office
               </h3>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
                 {movie.awards && (
-                  <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                    <Trophy className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
-                    <span className="text-sm text-amber-100 leading-snug">{movie.awards}</span>
+                  <div className="flex flex-col gap-2 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 shadow-inner">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+                      <Trophy className="w-4 h-4 text-amber-400" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold text-amber-500/60 uppercase tracking-widest">Awards</span>
+                      <p className="text-sm font-semibold text-amber-100 leading-snug line-clamp-3">{movie.awards}</p>
+                    </div>
                   </div>
                 )}
                 {movie.boxOffice && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                    <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <div>
-                      <span className="text-xs text-neutral-400 font-medium">Box Office</span>
+                  <div className="flex flex-col gap-2 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 shadow-inner">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-widest">Box Office</span>
                       <p className="text-sm font-bold text-emerald-300">{movie.boxOffice}</p>
                     </div>
                   </div>
