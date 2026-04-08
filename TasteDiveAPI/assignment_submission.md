@@ -1,6 +1,6 @@
 # Assignment Submission: TasteDive API Testing (Task 4)
 **Course:** AISE 2251
-**Name:** [USER NAME]
+**Name:** Ajami558
 **Module:** TasteDive API Individual Component
 
 ---

@@ -1,5 +1,5 @@
 ﻿import pytest
-
+#test was done before we changed tmdb3 api to tmbdv3 api but it is essentially the same code, just different library
 #dummy function to test without calling API
 def searchMovie(title_obj):
     return [title_obj]
