@@ -100,7 +100,7 @@ class FilmOnDemand:
 
     def get_movie_info(self):
         print("\n--- Fetching TMDb Details ---")
-        movie_titles = list(self.movies_and_ids.keys())[self.offset : self.offset + 10]
+        movie_titles = list(self.movies_and_ids.keys())[:20]
 
         def fetch_tmdb_info(movie):
             info = self.tmdb.movie_info(movie)
