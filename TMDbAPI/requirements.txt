@@ -1,1 +1,1 @@
-pip install tmdb3
+pip install tmdbv3api
