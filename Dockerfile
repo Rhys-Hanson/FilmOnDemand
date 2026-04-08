@@ -19,9 +19,10 @@ COPY . .
 # Set PYTHONPATH to the current directory (project root)
 # This ensures that 'server.movie_service' can be imported by cli.py
 ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
 # Define the entrypoint to run the CLI
 ENTRYPOINT ["python", "cli.py"]
 
-# Default command (can be overridden during docker run)
-CMD ["--mock"]
+# Launch the interactive CLI by default.
+CMD []

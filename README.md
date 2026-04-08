@@ -219,7 +219,25 @@ Then open:
 
 ## CLI Mode
 
-The repository also includes a CLI for testing the recommendation pipeline without the UI:
+The repository also includes a CLI for testing the recommendation pipeline without the UI.
+
+By default, it now launches an interactive prompt flow:
+
+```powershell
+python cli.py
+```
+
+It will ask for:
+
+- streaming services
+- whether to recommend by `genres`, `actor/director`, or `similar movies`
+- up to `3` genres
+- up to `3` similar movies
+- up to `1` actor or director
+
+The CLI then prints a polished movie profile for each recommendation, including the same core details shown in the UI such as ratings, streaming services, synopsis, cast, filmmakers, awards, box office, trailer ID, and poster URL.
+
+You can still use flags if you want to skip prompts:
 
 ```powershell
 python cli.py --genres "Action,Sci-Fi" --services "Netflix,Prime Video"
@@ -230,6 +248,34 @@ You can also use mock mode:
 ```powershell
 python cli.py --mock
 ```
+
+## Docker Demo
+
+Build the image:
+
+```powershell
+docker build -t filmon-demand .
+```
+
+Run the interactive container demo:
+
+```powershell
+docker run -it --env-file .env filmon-demand
+```
+
+Run with mock data instead of live APIs:
+
+```powershell
+docker run -it --env-file .env -e USE_MOCK_DATA=true filmon-demand
+```
+
+This container flow is ideal for demonstrating that:
+
+- the image can be built successfully
+- dependencies are included in the image
+- the container starts correctly
+- the app runs properly inside the container
+- the recommendation output is clear and presentation-ready
 
 ## Why FilmOnDemand Matters
 
