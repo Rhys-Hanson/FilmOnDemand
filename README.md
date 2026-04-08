@@ -234,3 +234,10 @@ python cli.py --mock
 ## Why FilmOnDemand Matters
 
 FilmOnDemand is designed to remove friction from group entertainment decisions. It transforms movie night from a long, frustrating search into a fast, collaborative, and fun shared experience.
+
+
+## Demo Videos
+
+| AI-Powered UI Demo | Parameter Input UI Demo |
+|---|---|
+| [![AI-Powered UI Demo](docs/Images/FilmOnDemand_Logo.png)](docs/Videos/AI_Powered_UI_Demo.mp4) | [![Parameter Input UI Demo](docs/Images/FilmOnDemand_Logo.png)](docs/Videos/Parameter_Input_UI_Demo.mp4) |
