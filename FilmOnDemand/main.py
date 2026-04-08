@@ -189,11 +189,6 @@ class FilmOnDemand:
         self.get_movie_info()
         return self.movies_with_desc
 
-    def movie_points(self, JSON_scores):
-        movies = {}
-        for movie in self.movies_and_ids.keys():
-            movies[movie] = JSON_scores
-
 
 if __name__ == "__main__":
     films = FilmOnDemand()
