@@ -112,6 +112,15 @@ This lets the app recommend movies that are:
 |-- .env.example
 ```
 
+## Team GitHub Accounts
+
+For course and submission context, these school GitHub accounts map to the following personal accounts:
+
+- `rdifeli` = `Rhys-Hanson`
+- `ajami558` = `darkprince558`
+- `bchyn999` = `beanchyn`
+- `VinceJH` = `VinceJH`
+
 ## Environment Variables
 
 Copy the root env template before running the backend:
