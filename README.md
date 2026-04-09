@@ -1,5 +1,6 @@
 ﻿# FilmOnDemand
 Made by Anish, Rhys, Samuel and Brandon
+B
 **Settle the "what should we watch?" debate before it starts.**
 
 FilmOnDemand is a real-time group movie recommendation platform built for couples, roommates, and friend groups. Instead of endlessly scrolling through streaming apps, users create a shared room, join with a room code or QR code, set their preferences, and vote through a curated deck of instantly watchable movies. When everyone finishes, the app ranks the results by group score so the best pick rises to the top.
