@@ -29,15 +29,21 @@ class TMDbAPI:
     # ------------------------------------------------------------------
     # Public interface — return shape is identical to the old tmdb3 version
     # ------------------------------------------------------------------
-    def movie_info(self, title: str) -> dict:
-        # 1. Search for the movie to get its TMDb ID
-        results = self._search.movies(title)
-        if not results:
-            return {"error": "No movie found"}
+    def movie_info(self, title: str, movie_id: int | str | None = None) -> dict:
+        if movie_id in (None, "", "N/A"):
+            results = self._search.movies(title)
+            if not results:
+                return {"error": "No movie found"}
+            movie_id = results[0].id
+        else:
+            try:
+                movie_id = int(movie_id)
+            except (TypeError, ValueError):
+                results = self._search.movies(title)
+                if not results:
+                    return {"error": "No movie found"}
+                movie_id = results[0].id
 
-        movie_id = results[0].id
-
-        # 2. Fetch full details, credits, videos, and release dates
         detail = self._movie.details(movie_id)
         credits = self._movie.credits(movie_id)
         videos = self._movie.videos(movie_id)

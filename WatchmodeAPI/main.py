@@ -61,6 +61,7 @@ class WatchmodeAPI:
             for item in self.source_data
             if item.get("id") and item.get("name")
         }
+        self._movie_info_cache = {}
 
 # takes a list of strings through the genres param and returns a corresponding list of IDs
     def get_genre_ids(self, genres):
@@ -109,6 +110,8 @@ class WatchmodeAPI:
 
     def get_watchmode_movie_info(self, movie_input):
         search_value = movie_input.strip().lower()
+        if search_value in self._movie_info_cache:
+            return self._movie_info_cache[search_value]
         params = {
             "apiKey": self.API_KEY,
             "search_field": "name",
@@ -131,6 +134,7 @@ class WatchmodeAPI:
         ]
 
         if not exact_match:
+            self._movie_info_cache[search_value] = None
             return None
 
         title_id = exact_match[0]["id"]
@@ -153,7 +157,9 @@ class WatchmodeAPI:
         sources = data.get("sources", [])
         sources = [source["source_id"] for source in sources if source.get("type") == "sub"]
 
-        return {"tmdb_id": tmdb_id, "sources": sources}
+        result = {"tmdb_id": tmdb_id, "sources": sources}
+        self._movie_info_cache[search_value] = result
+        return result
 
     def get_source_names(self, source_ids):
         names = []

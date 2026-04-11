@@ -100,17 +100,21 @@ class FilmOnDemand:
 
     def get_movie_info(self):
         print("\n--- Fetching TMDb Details ---")
-        movie_titles = list(self.movies_and_ids.keys())[:20]
+        movie_entries = list(self.movies_and_ids.items())[:20]
 
-        def fetch_tmdb_info(movie):
-            info = self.tmdb.movie_info(movie)
-            info["id"] = str(self.movies_and_ids.get(movie) or movie)
+        def fetch_tmdb_info(movie_entry):
+            movie, movie_id = movie_entry
+            try:
+                info = self.tmdb.movie_info(movie, movie_id=movie_id)
+            except TypeError:
+                info = self.tmdb.movie_info(movie)
+            info["id"] = str(movie_id or movie)
             info["title"] = movie
             return info
 
-        if movie_titles:
-            with ThreadPoolExecutor(max_workers=min(8, len(movie_titles))) as executor:
-                movie_info_list = list(executor.map(fetch_tmdb_info, movie_titles))
+        if movie_entries:
+            with ThreadPoolExecutor(max_workers=min(8, len(movie_entries))) as executor:
+                movie_info_list = list(executor.map(fetch_tmdb_info, movie_entries))
         else:
             movie_info_list = []
 

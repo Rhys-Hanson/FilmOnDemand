@@ -1,6 +1,7 @@
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 
 import requests
@@ -13,6 +14,10 @@ class TraktAPI:
 
     API_KEY = os.getenv("TRAKT_API_KEY")
     base_url = "https://api.trakt.tv"
+
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.trust_env = False
 
     def get_headers(self):
         return {
@@ -29,7 +34,7 @@ class TraktAPI:
         headers = self.get_headers()
 
         trending_url = f"{self.base_url}/movies/trending"
-        response = requests.get(trending_url, headers=headers, params={"limit": 100}, timeout=20)
+        response = self.session.get(trending_url, headers=headers, params={"limit": 100}, timeout=20)
 
         if response.status_code != 200:
             print(f"API key test FAILED. Status code: {response.status_code}")
@@ -42,7 +47,7 @@ class TraktAPI:
                 return self.parse_results(entry, movie_title, rank, source="trending")
 
         popular_url = f"{self.base_url}/movies/popular"
-        response = requests.get(popular_url, headers=headers, params={"limit": 100}, timeout=20)
+        response = self.session.get(popular_url, headers=headers, params={"limit": 100}, timeout=20)
 
         if response.status_code != 200:
             print(f"API key test FAILED on popular endpoint. Status code: {response.status_code}")
@@ -76,7 +81,7 @@ class TraktAPI:
         limit = 100
 
         trending_map = {}
-        response = requests.get(
+        response = self.session.get(
             f"{self.base_url}/movies/trending",
             headers=headers,
             params={"limit": limit},
@@ -91,7 +96,7 @@ class TraktAPI:
                 }
 
         popular_map = {}
-        response = requests.get(
+        response = self.session.get(
             f"{self.base_url}/movies/popular",
             headers=headers,
             params={"limit": limit},
@@ -106,7 +111,7 @@ class TraktAPI:
             title_lower = title.lower()
             entry = {"title": title}
 
-            search_response = requests.get(
+            search_response = self.session.get(
                 f"{self.base_url}/search/movie",
                 headers=headers,
                 params={"query": title, "limit": 1},
@@ -122,7 +127,7 @@ class TraktAPI:
                 entry["tmdb_id"] = ids.get("tmdb", "N/A")
 
                 if slug:
-                    ratings_response = requests.get(
+                    ratings_response = self.session.get(
                         f"{self.base_url}/movies/{slug}/ratings",
                         headers=headers,
                         timeout=20,
@@ -135,7 +140,7 @@ class TraktAPI:
                         entry["trakt_rating"] = "N/A"
                         entry["rating_votes"] = "N/A"
 
-                    stats_response = requests.get(
+                    stats_response = self.session.get(
                         f"{self.base_url}/movies/{slug}/stats",
                         headers=headers,
                         timeout=20,
@@ -201,7 +206,7 @@ class TraktAPI:
                 "metacritic_like_score": 0,
             }
 
-            search_response = requests.get(
+            search_response = self.session.get(
                 f"{self.base_url}/search/movie",
                 headers=headers,
                 params={"query": title, "limit": 1},
@@ -215,7 +220,7 @@ class TraktAPI:
             if not slug:
                 return entry
 
-            ratings_response = requests.get(
+            ratings_response = self.session.get(
                 f"{self.base_url}/movies/{slug}/ratings",
                 headers=headers,
                 timeout=20,
@@ -260,7 +265,7 @@ class TraktAPI:
         else:
             url = f"{self.base_url}/movies/{category}"
 
-        response = requests.get(url, headers=headers, params=params, timeout=20)
+        response = self.session.get(url, headers=headers, params=params, timeout=20)
 
         if response.status_code == 429:
             print("Rate limit hit. Please wait a moment and try again.")
