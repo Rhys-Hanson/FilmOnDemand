@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
 os.environ.setdefault("OMDB_API_KEY", "test-omdb-key")
 os.environ.setdefault("TRAKT_API_KEY", "test-trakt-key")
 os.environ.setdefault("WATCHMODE_API_KEY", "test-watchmode-key")
-os.environ.setdefault("TMDb_API_KEY", "test-tmdb-key")
+os.environ.setdefault("TMDB_API_KEY", "test-tmdb-key")
 os.environ.setdefault("TASTEDIVE_API_KEY", "test-tastedive-key")
 os.environ.setdefault("GEMINI_API_KEY", "test-gemini-key")
 

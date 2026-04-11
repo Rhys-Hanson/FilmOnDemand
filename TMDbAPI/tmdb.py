@@ -15,9 +15,9 @@ class TMDbAPI:
         ROOT_DIR = Path(__file__).resolve().parent.parent
         load_dotenv(ROOT_DIR / ".env")
 
-        api_key = os.getenv("TMDb_API_KEY")
+        api_key = os.getenv("TMDB_API_KEY")
         if not api_key:
-            raise ValueError("TMDb_API_KEY is missing. Check your .env file.")
+            raise ValueError("TMDB_API_KEY is missing. Check your .env file.")
 
         tmdb = TMDb()
         tmdb.api_key = api_key
