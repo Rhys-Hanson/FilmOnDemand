@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -18,12 +18,16 @@ from .filter_options import load_watchmode_filter_data, search_actor_names, sear
 from .movie_service import build_deck
 
 USE_MOCK_DATA = os.getenv("USE_MOCK_DATA", "false").lower() == "true"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "").rstrip("/")
+ALLOWED_ORIGINS = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",") if origin.strip()]
+if not ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS = [FRONTEND_URL] if FRONTEND_URL else ["*"]
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Change to your React app URL in production
-    allow_credentials=True,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=ALLOWED_ORIGINS != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -80,7 +84,7 @@ class MovieSearchResponse(BaseModel):
 # --- REST ENDPOINTS ---
 
 @app.post("/api/rooms/create")
-async def create_room():
+async def create_room(request: Request):
     """Generates a random 6-character room code."""
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     active_rooms[code] = {
@@ -94,9 +98,19 @@ async def create_room():
         "deck_cache_key": None,
         "last_ai_generation": 0.0
     }
+    public_origin = FRONTEND_URL or request.headers.get("origin", "").rstrip("/") or str(request.base_url).rstrip("/")
     return {
         "room_code": code,
-        "qr_url": f"https://yourfrontend.com/join/{code}"
+        "qr_url": f"{public_origin}/join/{code}"
+    }
+
+
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "mock_mode": USE_MOCK_DATA,
+        "websocket_support_required": True,
     }
 
 @app.get("/api/rooms/{room_code}")

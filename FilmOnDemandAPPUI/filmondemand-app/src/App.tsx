@@ -10,6 +10,7 @@ import { CountdownScreen } from './screens/CountdownScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { MovieDetailOverlay } from './components/MovieDetailOverlay';
 import { Movie } from './data/movies';
+import { ROOMS_API_URL, WS_ROOMS_URL } from './lib/config';
 
 export type AppState = 'ENTRY' | 'SETTINGS' | 'LOBBY' | 'LOADING_DECK' | 'SWIPING' | 'COUNTDOWN' | 'RESULTS';
 
@@ -24,9 +25,6 @@ const getOrCreateClientId = () => {
 };
 
 const CLIENT_ID = getOrCreateClientId();
-const hostIP = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-const WS_URL = `ws://${hostIP}:8000/ws/rooms`;
-const API_URL = `http://${hostIP}:8000/api/rooms`;
 
 export default function App() {
   const [appState, setAppState] = useState<AppState>('ENTRY');
@@ -69,7 +67,7 @@ export default function App() {
     }
   }, [roomCode, isHost]);
 
-  const socketUrl = roomCode ? `${WS_URL}/${roomCode}/${CLIENT_ID}` : null;
+  const socketUrl = roomCode ? `${WS_ROOMS_URL}/${roomCode}/${CLIENT_ID}` : null;
   const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket(socketUrl, {
     shouldReconnect: () => true,
     reconnectAttempts: 10,
@@ -119,7 +117,7 @@ export default function App() {
 
   const handleJoinRoom = async (code: string) => {
     try {
-      const res = await fetch(`${API_URL}/${code}`);
+      const res = await fetch(`${ROOMS_API_URL}/${code}`);
       if (res.ok) {
         setRoomCode(code);
         setIsHost(false);
@@ -134,7 +132,7 @@ export default function App() {
 
   const handleCreateRoom = async () => {
     try {
-      const res = await fetch(`${API_URL}/create`, { method: 'POST' });
+      const res = await fetch(`${ROOMS_API_URL}/create`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         setRoomCode(data.room_code);

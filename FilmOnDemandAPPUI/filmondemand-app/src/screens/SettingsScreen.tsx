@@ -4,6 +4,7 @@ import { Play, Search, Users, Sparkles, Tv, Film, Filter } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { cn } from '../lib/utils';
 import { SearchableChipInput } from '../components/SearchableChipInput';
+import { API_BASE_URL, getRoomJoinUrl } from '../lib/config';
 
 export interface RoomFilters {
   genres: string[];
@@ -28,8 +29,6 @@ const POPULAR_SERVICES = ['Netflix', 'Prime Video', 'Max', 'Hulu'];
 const ACTORS = ['Timothée Chalamet', 'Zendaya', 'Leonardo DiCaprio', 'Tom Cruise', 'Michelle Yeoh', 'Robert Pattinson', 'Florence Pugh', 'Cillian Murphy', 'Anya Taylor-Joy', 'Oscar Isaac'];
 
 const MOVIES = ['Inception', 'The Dark Knight', 'Interstellar', 'Dune', 'Spider-Man', 'Pulp Fiction', 'The Matrix', 'Avatar', 'Everything Everywhere All at Once', 'Parasite'];
-const hostIP = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
-const API_BASE_URL = `http://${hostIP}:8000/api`;
 
 export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScreenProps) {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -198,7 +197,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
         <div className="glass-dark rounded-[24px] p-6 flex flex-col items-center justify-center border border-white/5 relative overflow-hidden shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-orange-500/5" />
           <div className="bg-white p-3 rounded-2xl mb-4 relative z-10 shadow-lg">
-             <QRCode value={`http://${window.location.host}/join/${roomCode}`} size={120} />
+             <QRCode value={getRoomJoinUrl(roomCode)} size={120} />
           </div>
           <p className="text-neutral-400 text-sm font-semibold uppercase tracking-widest mb-1 relative z-10">Room Code</p>
           <div className="text-4xl font-mono font-black tracking-[0.2em] text-white relative z-10 drop-shadow-md">
