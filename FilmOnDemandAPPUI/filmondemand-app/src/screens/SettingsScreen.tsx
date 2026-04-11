@@ -187,17 +187,17 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
   }, [serviceOptions]);
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-6 pb-40 overflow-y-auto selection:bg-rose-500/30">
+    <div className="min-h-[100svh] bg-neutral-950 px-4 py-4 sm:p-6 pb-32 sm:pb-40 overflow-y-auto selection:bg-rose-500/30">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md mx-auto space-y-10"
+        className="max-w-md mx-auto space-y-6 sm:space-y-10"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pt-4">
+        <div className="flex items-center justify-between pt-1 sm:pt-4">
           <div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Room Settings</h1>
-            <p className="text-neutral-400 mt-1 flex items-center gap-2 font-medium">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Room Settings</h1>
+            <p className="text-sm sm:text-base text-neutral-400 mt-1 flex items-center gap-2 font-medium">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
               {playerCount} {playerCount === 1 ? 'player' : 'players'} joined
             </p>
@@ -224,13 +224,13 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
         </div>
 
         {/* Room Code */}
-        <div className="glass-dark rounded-[24px] p-6 flex flex-col items-center justify-center border border-white/5 relative overflow-hidden shadow-2xl">
+        <div className="glass-dark rounded-[24px] p-4 sm:p-6 flex flex-col items-center justify-center border border-white/5 relative overflow-hidden shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-orange-500/5" />
           <div className="bg-white p-3 rounded-2xl mb-4 relative z-10 shadow-lg">
-             <QRCode value={getRoomJoinUrl(roomCode)} size={120} />
+             <QRCode value={getRoomJoinUrl(roomCode)} size={96} />
           </div>
           <p className="text-neutral-400 text-sm font-semibold uppercase tracking-widest mb-1 relative z-10">Room Code</p>
-          <div className="text-4xl font-mono font-black tracking-[0.2em] text-white relative z-10 drop-shadow-md">
+          <div className="text-3xl sm:text-4xl font-mono font-black tracking-[0.16em] sm:tracking-[0.2em] text-white relative z-10 drop-shadow-md">
             {roomCode}
           </div>
         </div>
@@ -254,7 +254,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
 
         {/* AI Input Strategy Selector (Always pinned here in AI Mode) */}
         {isAiMode && (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center gap-2 text-white font-semibold text-lg">
               <Sparkles className="w-5 h-5 text-rose-400 animate-pulse" />
               <h2>AI Input Strategy</h2>
@@ -294,7 +294,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
                 onChange={(e) => setAiPrompt(e.target.value)}
                 placeholder="Describe the movies you want to watch... e.g. 'Sci-fi movies about time travel but not Interstellar'"
                 className={cn(
-                  "w-full min-h-[180px] mt-4 bg-neutral-900/40 border rounded-2xl p-6 text-white placeholder:text-neutral-500 focus:outline-none transition-all duration-500 resize-none animate-in fade-in zoom-in-95 duration-300 overflow-y-auto leading-relaxed break-words block",
+                  "w-full min-h-[144px] sm:min-h-[180px] mt-4 bg-neutral-900/40 border rounded-2xl p-4 sm:p-6 text-white placeholder:text-neutral-500 focus:outline-none transition-all duration-500 resize-none animate-in fade-in zoom-in-95 duration-300 overflow-y-auto leading-relaxed break-words block",
                   isAiMode 
                     ? "border-rose-500/10 focus:border-rose-500/30 focus:bg-rose-500/[0.02] focus:ring-4 focus:ring-rose-500/5 placeholder:text-rose-500/20" 
                     : "border-neutral-800 focus:border-neutral-700 focus:bg-neutral-900/60"
@@ -306,7 +306,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
 
         {/* Core Filters / Parameters Section */}
         {(!isAiMode || aiInputStrategy === 'parameters') && (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {!isAiMode && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-semibold text-lg">
@@ -398,7 +398,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
       </motion.div>
 
       {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent z-[100] pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 px-4 sm:px-6 pt-6 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:pb-6 bg-gradient-to-t from-neutral-950 via-neutral-950 to-transparent z-[100] pointer-events-none">
         <div className="max-w-md mx-auto pointer-events-auto">
           <motion.button 
             onClick={() => {

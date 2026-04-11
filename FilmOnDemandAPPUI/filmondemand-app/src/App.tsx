@@ -10,7 +10,7 @@ import { CountdownScreen } from './screens/CountdownScreen';
 import { ResultsScreen } from './screens/ResultsScreen';
 import { MovieDetailOverlay } from './components/MovieDetailOverlay';
 import { Movie } from './data/movies';
-import { ROOMS_API_URL, WS_ROOMS_URL } from './lib/config';
+import { API_BASE_URL, ROOMS_API_URL, WS_ROOMS_URL } from './lib/config';
 
 export type AppState = 'ENTRY' | 'SETTINGS' | 'LOBBY' | 'LOADING_DECK' | 'SWIPING' | 'COUNTDOWN' | 'RESULTS';
 
@@ -55,6 +55,12 @@ export default function App() {
         window.history.replaceState({}, '', '/');
       }
     }
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/health`).catch(() => {
+      // Warm the backend on app load so the first real action pays less Render cold-start cost.
+    });
   }, []);
 
   useEffect(() => {
