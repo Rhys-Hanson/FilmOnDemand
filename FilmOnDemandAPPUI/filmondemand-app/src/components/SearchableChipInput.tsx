@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, X, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -45,11 +45,17 @@ export function SearchableChipInput({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filteredOptions = query.trim().length > 0
-    ? options.filter(o =>
-        o.toLowerCase().includes(query.toLowerCase()) && !selected.includes(o)
-      ).sort((a, b) => scoreOption(a, query) - scoreOption(b, query)).slice(0, 10)
-    : [];
+  const filteredOptions = useMemo(() => {
+    const trimmedQuery = query.trim().toLowerCase();
+    if (!trimmedQuery) {
+      return [];
+    }
+
+    return options
+      .filter((option) => option.toLowerCase().includes(trimmedQuery) && !selected.includes(option))
+      .sort((a, b) => scoreOption(a, query) - scoreOption(b, query))
+      .slice(0, 10);
+  }, [options, query, selected]);
 
   // Close dropdown on click outside the entire component
   useEffect(() => {
@@ -77,7 +83,10 @@ export function SearchableChipInput({
     onChange(selected.filter(s => s !== option));
   };
 
-  const availableSuggestions = suggestions?.filter(s => !selected.includes(s)) || [];
+  const availableSuggestions = useMemo(
+    () => suggestions?.filter((suggestion) => !selected.includes(suggestion)) || [],
+    [selected, suggestions]
+  );
 
   return (
     <div className="space-y-3" ref={containerRef}>

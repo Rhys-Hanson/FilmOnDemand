@@ -42,8 +42,10 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
   const [genreOptions, setGenreOptions] = useState<string[]>(FALLBACK_GENRES);
   const [serviceOptions, setServiceOptions] = useState<string[]>([]);
   const [actorOptions, setActorOptions] = useState<string[]>([]);
+  const [actorQuery, setActorQuery] = useState('');
   const [isActorSearchLoading, setIsActorSearchLoading] = useState(false);
   const [movieOptions, setMovieOptions] = useState<string[]>(MOVIES);
+  const [movieQuery, setMovieQuery] = useState('');
   const [isMovieSearchLoading, setIsMovieSearchLoading] = useState(false);
 
   const handleGenresChange = (newSelection: string[]) => {
@@ -94,8 +96,8 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
     };
   }, []);
 
-  const handleActorQueryChange = async (query: string) => {
-    const trimmedQuery = query.trim();
+  useEffect(() => {
+    const trimmedQuery = actorQuery.trim();
 
     if (trimmedQuery.length < 2) {
       setActorOptions([]);
@@ -103,25 +105,39 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
       return;
     }
 
-    setIsActorSearchLoading(true);
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setIsActorSearchLoading(true);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/options/actors?q=${encodeURIComponent(trimmedQuery)}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch actor suggestions');
+      try {
+        const response = await fetch(`${API_BASE_URL}/options/actors?q=${encodeURIComponent(trimmedQuery)}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch actor suggestions');
+        }
+
+        const data = await response.json();
+        if (!cancelled) {
+          setActorOptions(Array.isArray(data.actors) ? data.actors : []);
+        }
+      } catch {
+        if (!cancelled) {
+          setActorOptions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsActorSearchLoading(false);
+        }
       }
+    }, 250);
 
-      const data = await response.json();
-      setActorOptions(Array.isArray(data.actors) ? data.actors : []);
-    } catch {
-      setActorOptions([]);
-    } finally {
-      setIsActorSearchLoading(false);
-    }
-  };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [actorQuery]);
 
-  const handleMovieQueryChange = async (query: string) => {
-    const trimmedQuery = query.trim();
+  useEffect(() => {
+    const trimmedQuery = movieQuery.trim();
 
     if (trimmedQuery.length < 2) {
       setMovieOptions(MOVIES);
@@ -129,22 +145,36 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
       return;
     }
 
-    setIsMovieSearchLoading(true);
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setIsMovieSearchLoading(true);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/options/movies?q=${encodeURIComponent(trimmedQuery)}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch movie suggestions');
+      try {
+        const response = await fetch(`${API_BASE_URL}/options/movies?q=${encodeURIComponent(trimmedQuery)}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch movie suggestions');
+        }
+
+        const data = await response.json();
+        if (!cancelled) {
+          setMovieOptions(Array.isArray(data.movies) && data.movies.length > 0 ? data.movies : MOVIES);
+        }
+      } catch {
+        if (!cancelled) {
+          setMovieOptions(MOVIES);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsMovieSearchLoading(false);
+        }
       }
+    }, 250);
 
-      const data = await response.json();
-      setMovieOptions(Array.isArray(data.movies) && data.movies.length > 0 ? data.movies : MOVIES);
-    } catch {
-      setMovieOptions(MOVIES);
-    } finally {
-      setIsMovieSearchLoading(false);
-    }
-  };
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [movieQuery]);
 
   const popularGenreSuggestions = useMemo(() => {
     const availableGenres = new Set(genreOptions);
@@ -336,7 +366,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
                   options={actorOptions} 
                   selected={selectedActors} 
                   onChange={handleActorsChange}
-                  onQueryChange={handleActorQueryChange}
+                  onQueryChange={setActorQuery}
                   loading={isActorSearchLoading}
                   isAiMode={isAiMode}
                   icon={<Search className={cn("w-5 h-5 mr-3 shrink-0", isAiMode ? "text-rose-500/50" : "text-neutral-500")} />}
@@ -355,7 +385,7 @@ export function SettingsScreen({ roomCode, playerCount, onStart }: SettingsScree
                   options={movieOptions} 
                   selected={selectedMovies} 
                   onChange={handleMoviesChange}
-                  onQueryChange={handleMovieQueryChange}
+                  onQueryChange={setMovieQuery}
                   loading={isMovieSearchLoading}
                   isAiMode={isAiMode}
                   icon={<Search className={cn("w-5 h-5 mr-3 shrink-0", isAiMode ? "text-rose-500/50" : "text-neutral-500")} />}

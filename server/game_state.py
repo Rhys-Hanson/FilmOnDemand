@@ -18,8 +18,6 @@ class GameState:
         
         # Tracks how many players pressed "Already seen it"
         self.seen_count = Counter()
-        
-        self.time_limit = None
 
     def register_swipe(self, movie_id: str, liked: bool):
         """Swipe right (+1 pt, counts as a like) or swipe left (-1 pt)."""

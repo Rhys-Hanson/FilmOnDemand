@@ -43,7 +43,6 @@ def _direct_network_env():
 
 def normalize_movie_payload(filters: dict[str, Any], raw_movies: list[dict[str, Any]]) -> list[dict[str, Any]]:
     normalized_movies: list[dict[str, Any]] = []
-    requested_services = filters.get("services", [])
 
     for index, movie in enumerate(raw_movies, start=1):
         cast_list = movie.get("castList") or []

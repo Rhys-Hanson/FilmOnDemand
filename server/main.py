@@ -32,9 +32,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage for active rooms
-active_rooms = {
-    "000000": {
+def _new_room_state() -> dict:
+    return {
         "players": 0,
         "movies": [],
         "scores": {},
@@ -43,8 +42,13 @@ active_rooms = {
         "deck": [],
         "full_deck": [],
         "deck_cache_key": None,
-        "last_ai_generation": 0.0
+        "last_ai_generation": 0.0,
     }
+
+
+# In-memory storage for active rooms
+active_rooms = {
+    "000000": _new_room_state()
 }
 manager = RoomManager()
 
@@ -60,6 +64,43 @@ def _room_slice_from_filters(full_deck: list, filters: dict) -> list:
     except (TypeError, ValueError):
         offset = 0
     return full_deck[offset : offset + 10]
+
+
+def _final_game_payload(game_state: GameState) -> dict:
+    final = game_state.get_final_results()
+    return {
+        "type": "game_over",
+        "scores": final["scores"],
+        "super_likes": final["super_likes"],
+        "seen_counts": final["seen_counts"],
+        "unanimous": final["unanimous"],
+    }
+
+
+def _get_room_deck(room_code: str, filters: dict) -> list:
+    room_state = active_rooms[room_code]
+    cache_key = _room_cache_key(filters)
+    cached_full_deck = room_state.get("full_deck", [])
+
+    if filters.get("ai_prompt") and (
+        room_state.get("deck_cache_key") != cache_key or not cached_full_deck
+    ):
+        current_time = time.time()
+        last_gen_time = room_state.get("last_ai_generation", 0.0)
+        if current_time - last_gen_time < 15.0:
+            raise ValueError("AI generation is rate-limited. Please wait 15 seconds before trying again.")
+        room_state["last_ai_generation"] = current_time
+
+    if room_state.get("deck_cache_key") == cache_key and cached_full_deck:
+        deck = _room_slice_from_filters(cached_full_deck, filters)
+    else:
+        full_deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck({**filters, "offset": 0})
+        room_state["full_deck"] = full_deck
+        room_state["deck_cache_key"] = cache_key
+        deck = _room_slice_from_filters(full_deck, filters)
+
+    room_state["deck"] = deck
+    return deck
 
 class RoomSettings(BaseModel):
     genres: list[str] = []
@@ -87,17 +128,7 @@ class MovieSearchResponse(BaseModel):
 async def create_room(request: Request):
     """Generates a random 6-character room code."""
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    active_rooms[code] = {
-        "players": 0,
-        "movies": [],
-        "scores": {}, # Tracks swipes: {"movie_id_1": 4_likes, "movie_id_2": 1_like}
-        "clients": set(),
-        "connected_clients": set(),
-        "deck": [],
-        "full_deck": [],
-        "deck_cache_key": None,
-        "last_ai_generation": 0.0
-    }
+    active_rooms[code] = _new_room_state()
     public_origin = FRONTEND_URL or request.headers.get("origin", "").rstrip("/") or str(request.base_url).rstrip("/")
     return {
         "room_code": code,
@@ -147,29 +178,12 @@ async def start_room_game(room_code: str, request: StartGameRequest):
     if room_code not in active_rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
-    filters_dict = request.filters.model_dump()
-    cache_key = _room_cache_key(filters_dict)
-    cached_full_deck = active_rooms[room_code].get("full_deck", [])
-
-    if filters_dict.get("ai_prompt") and (
-        active_rooms[room_code].get("deck_cache_key") != cache_key or not cached_full_deck
-    ):
-        current_time = time.time()
-        last_gen_time = active_rooms[room_code].get("last_ai_generation", 0.0)
-        if current_time - last_gen_time < 15.0:
-            raise HTTPException(status_code=429, detail="AI generation is rate-limited. Please wait 15 seconds before trying again.")
-        active_rooms[room_code]["last_ai_generation"] = current_time
-
-    if active_rooms[room_code].get("deck_cache_key") == cache_key and cached_full_deck:
-        deck = _room_slice_from_filters(cached_full_deck, filters_dict)
-    else:
-        try:
-            full_deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck({**filters_dict, "offset": 0})
-        except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"Failed to build movie deck: {exc}") from exc
-        active_rooms[room_code]["full_deck"] = full_deck
-        active_rooms[room_code]["deck_cache_key"] = cache_key
-        deck = _room_slice_from_filters(full_deck, filters_dict)
+    try:
+        deck = _get_room_deck(room_code, request.filters.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Failed to build movie deck: {exc}") from exc
 
     return {"type": "game_started", "deck": deck}
 
@@ -200,14 +214,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
         game_state = active_rooms.get(room_code, {}).get("game_state")
         if game_state and active_rooms.get(room_code, {}).get("deck"):
             if game_state.is_game_over():
-                final = game_state.get_final_results()
-                await websocket.send_json({
-                    "type": "game_over",
-                    "scores": final["scores"],
-                    "super_likes": final["super_likes"],
-                    "seen_counts": final["seen_counts"],
-                    "unanimous": final["unanimous"],
-                })
+                await websocket.send_json(_final_game_payload(game_state))
             else:
                 # A game is already in progress. Sync this specific connection directly into it.
                 await websocket.send_json({
@@ -233,38 +240,20 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
             
             if data["action"] == "start_game":
                 filters = data.get("filters", {})
-                cache_key = _room_cache_key(filters)
-                cached_full_deck = active_rooms[room_code].get("full_deck", [])
-                
-                if filters.get("ai_prompt") and (
-                    active_rooms[room_code].get("deck_cache_key") != cache_key or not cached_full_deck
-                ):
-                    current_time = time.time()
-                    last_gen_time = active_rooms[room_code].get("last_ai_generation", 0.0)
-                    if current_time - last_gen_time < 15.0:
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": "AI generation is rate-limited. Please wait 15 seconds before trying again."
-                        })
-                        continue
-                    active_rooms[room_code]["last_ai_generation"] = current_time
-
-                if active_rooms[room_code].get("deck_cache_key") == cache_key and cached_full_deck:
-                    deck = _room_slice_from_filters(cached_full_deck, filters)
-                else:
-                    try:
-                        full_deck = MOCK_MOVIES if USE_MOCK_DATA else build_deck({**filters, "offset": 0})
-                    except Exception as exc:
-                        await websocket.send_json({
-                            "type": "error",
-                            "message": f"Failed to build movie deck: {exc}"
-                        })
-                        continue
-                    active_rooms[room_code]["full_deck"] = full_deck
-                    active_rooms[room_code]["deck_cache_key"] = cache_key
-                    deck = _room_slice_from_filters(full_deck, filters)
-                    
-                active_rooms[room_code]["deck"] = deck
+                try:
+                    deck = _get_room_deck(room_code, filters)
+                except ValueError as exc:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": str(exc)
+                    })
+                    continue
+                except Exception as exc:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"Failed to build movie deck: {exc}"
+                    })
+                    continue
 
                 # Create the game state to formally track progression
                 active_player_ids = set(active_rooms[room_code]["connected_clients"])
@@ -319,14 +308,7 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
                     game_state.player_finished_deck(client_id)
                     
                     if game_state.is_game_over():
-                        final = game_state.get_final_results()
-                        await manager.broadcast_to_room(room_code, {
-                            "type": "game_over",
-                            "scores": final["scores"],
-                            "super_likes": final["super_likes"],
-                            "seen_counts": final["seen_counts"],
-                            "unanimous": final["unanimous"],
-                        })
+                        await manager.broadcast_to_room(room_code, _final_game_payload(game_state))
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_code)
@@ -351,11 +333,4 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, client_id: st
 
         game_state = room_state.get("game_state") if room_state else None
         if game_state and game_state.is_game_over():
-            final = game_state.get_final_results()
-            await manager.broadcast_to_room(room_code, {
-                "type": "game_over",
-                "scores": final["scores"],
-                "super_likes": final["super_likes"],
-                "seen_counts": final["seen_counts"],
-                "unanimous": final["unanimous"],
-            })
+            await manager.broadcast_to_room(room_code, _final_game_payload(game_state))
