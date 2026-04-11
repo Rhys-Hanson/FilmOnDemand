@@ -154,7 +154,7 @@ export function SwipeScreen({ roomCode, movies, onPlayerFinished, onSwipeServer,
       <div className="flex items-center justify-between mb-6 z-10 relative">
         <div className="flex items-center gap-2 relative z-10">
           <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center border border-rose-500/30">
-            <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+            <Star className="w-5 h-5 text-rose-500 fill-rose-500" />
           </div>
           <span className="text-white font-bold">{superLikesLeft} left</span>
         </div>
